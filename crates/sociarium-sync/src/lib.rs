@@ -52,11 +52,10 @@ pub async fn sync_profile<A: SocialAdapter>(
     let started_from_prior_state = prior_state.is_some();
     let mut cursor = prior_state.and_then(|state| state.cursor);
     let mut seen_cursors = BTreeSet::new();
-    let mut pages_persisted = 0;
     let mut records_persisted = 0;
     let mut raw_evidence_objects = 0;
 
-    for _ in 0..options.max_pages {
+    for page_index in 0..options.max_pages {
         if let Some(value) = cursor.as_ref() {
             if !seen_cursors.insert(value.clone()) {
                 return Err(SyncError::CursorCycle(value.clone()));
@@ -79,7 +78,7 @@ pub async fn sync_profile<A: SocialAdapter>(
         raw_evidence_objects += batch.raw.len();
         cursor = batch.next_cursor.clone();
         store.persist_sync_batch(profile, &batch)?;
-        pages_persisted += 1;
+        let pages_persisted = page_index + 1;
 
         if !has_more {
             return Ok(SyncReport {
