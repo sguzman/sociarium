@@ -24,6 +24,10 @@ async-trait = "0.1"
 base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
+# idna accepts any 1.x adapter. Pin the unicode-rs backend so Rust 1.85 does
+# not resolve through the newer ICU4X/Yoke stack whose published MSRV metadata
+# is not sufficient to guarantee an actual 1.85 build.
+idna_adapter = "=1.1.0"
 rand = "0.8"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rusqlite = { version = "0.32", features = ["bundled"] }
