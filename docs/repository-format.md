@@ -84,6 +84,20 @@ HTTP authorization headers, OAuth token responses, OAuth/API failure bodies, PKC
 
 The same remote object may legitimately appear in more than one acquisition because Sociarium preserves observations over time rather than pretending a mutable remote object was observed only once.
 
+### Profile identity binding
+
+A local profile's stable remote identity is reconstructed from completed normalized `ProfileSnapshot.remote_id` observations in its acquisition history.
+
+The store recognizes three states:
+
+- **unbound** — no completed profile snapshot has established a stable remote ID;
+- **bound** — all durable profile snapshots agree on one remote ID;
+- **conflicted** — completed evidence contains multiple remote IDs for the same local profile/surface.
+
+The binding is deliberately not a field that exists only in `state/`, SQLite, or Git history. A cache or future materialized profile registry may accelerate lookup, but completed normalized evidence remains sufficient to reconstruct and audit the binding.
+
+Before publishing an acquisition, the store rejects a profile snapshot that contradicts an established/configured binding. Handles are not part of this durable key and may change across snapshots.
+
 ### Checkpoint state
 
 A successful acquisition writes an immutable profile checkpoint under `state/profiles/` **after** the acquisition directory becomes visible. State never advances first.
@@ -105,7 +119,7 @@ build hidden pending acquisition directory
 
 Errors before the rename remove the pending directory on a best-effort basis. An application crash may leave a hidden `.pending-*` directory; readers ignore those directories. A crash after the rename cannot make the completed acquisition disappear from recovery logic merely because its checkpoint was not written.
 
-Corpus Git policy must also ignore `.pending-*` staging directories so a crash followed by `git add .` cannot promote partial evidence into canonical history. Issue #6 owns this initialization policy.
+Corpus Git policy ignores `.pending-*` staging directories so a crash followed by `git add .` cannot promote partial evidence into canonical history. This policy is installed by `sociarium corpus init`.
 
 This is an application-crash consistency contract, not yet a claim of full power-loss durability across every filesystem.
 
