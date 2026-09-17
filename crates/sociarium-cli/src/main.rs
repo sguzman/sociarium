@@ -743,7 +743,6 @@ fn print_hit(hit: &PostHit) {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Read as _, Write as _};
     use std::net::{SocketAddr, TcpStream};
     use std::thread;
 
