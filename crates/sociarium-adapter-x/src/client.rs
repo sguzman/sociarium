@@ -37,17 +37,24 @@ impl XApiClient {
     pub(crate) async fn get_user_posts(
         &self,
         user_id: &str,
-        cursor: Option<&str>,
+        pagination_token: Option<&str>,
+        since_id: Option<&str>,
     ) -> Result<RawResponse<XPostsEnvelope>, XApiError> {
         validate_user_id(user_id)?;
+        if let Some(since_id) = since_id {
+            validate_post_id(since_id)?;
+        }
 
         let mut url = Url::parse(&format!("{API_BASE}users/{user_id}/tweets"))?;
         {
             let mut query = url.query_pairs_mut();
             query.append_pair("max_results", "100");
             query.append_pair("post.fields", "created_at");
-            if let Some(cursor) = cursor {
-                query.append_pair("pagination_token", cursor);
+            if let Some(pagination_token) = pagination_token {
+                query.append_pair("pagination_token", pagination_token);
+            }
+            if let Some(since_id) = since_id {
+                query.append_pair("since_id", since_id);
             }
         }
         self.get_json(url).await
@@ -93,6 +100,8 @@ pub enum XApiError {
     EmptyAccessToken,
     #[error("invalid X user id: {0}")]
     InvalidUserId(String),
+    #[error("invalid X post id: {0}")]
+    InvalidPostId(String),
     #[error("X URL error: {0}")]
     Url(#[from] url::ParseError),
     #[error("X transport error: {0}")]
@@ -104,10 +113,21 @@ pub enum XApiError {
 }
 
 fn validate_user_id(value: &str) -> Result<(), XApiError> {
-    if value.is_empty() || value.len() > 19 || !value.bytes().all(|byte| byte.is_ascii_digit()) {
+    if !is_snowflake(value) {
         return Err(XApiError::InvalidUserId(value.to_owned()));
     }
     Ok(())
+}
+
+fn validate_post_id(value: &str) -> Result<(), XApiError> {
+    if !is_snowflake(value) {
+        return Err(XApiError::InvalidPostId(value.to_owned()));
+    }
+    Ok(())
+}
+
+fn is_snowflake(value: &str) -> bool {
+    !value.is_empty() && value.len() <= 19 && value.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 #[cfg(test)]
@@ -123,7 +143,8 @@ mod tests {
     }
 
     #[test]
-    fn accepts_x_snowflake_shaped_user_ids() {
+    fn accepts_x_snowflake_shaped_ids() {
         validate_user_id("2244994945").unwrap();
+        validate_post_id("1844674407370955161").unwrap();
     }
 }
