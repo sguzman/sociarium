@@ -24,7 +24,8 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 
 ## Engineering rules
 
-- Keep generic domain types in `sociarium-core`; keep platform payloads, token semantics, and endpoint behavior in their adapter crate.
+- Keep generic domain types in `sociarium-core`; keep platform payloads, token semantics, endpoint behavior, and remote wire names in their adapter crate.
+- Generic Sociarium names do not rename remote protocol parameters. For X, names such as `tweet.fields` and `referenced_tweets` remain wire-level X details even though the core type is `Post`.
 - Keep persistent secret storage behind `sociarium-credentials`; it stores opaque bytes keyed by generic profile identity and must not know surface token schemas.
 - Prefer stable typed identifiers over raw strings crossing every boundary.
 - Preserve remote stable IDs separately from mutable handles/display names.
@@ -38,6 +39,7 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 - `Cargo.lock` is committed application build state. Do not delete it to force fresh resolution; dependency updates must deliberately refresh it and pass CI with `--locked` afterward.
 - The exact `idna_adapter` and Windows `keyring` constraints are compatibility/backend decisions documented in ADR 0005 and ADR 0004; do not loosen them accidentally during routine dependency cleanup.
 - Keep native Windows CI because the primary credential backend is Windows-specific and must not rot behind `#[cfg(windows)]`.
+- Successful remote social responses may be durable raw evidence. Failed OAuth/API protocol bodies are diagnostics, not automatically corpus evidence, and must not be dumped verbatim into pasteable errors.
 
 ## Current milestone
 
@@ -45,6 +47,24 @@ M0 is one vertical slice:
 
 `configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
 
-Repository implementation for M0 is complete. The remaining gate is a live Windows smoke test with a registered X Developer App and authorized account. Do not close M0 until native login, credential persistence, sync, durable checkpointing, index rebuild, and local query succeed against real X data.
+The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. M0 is **not repository-complete** while issues #2–#5 remain open.
 
-Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, or multiple adapters. The architecture must permit those later without implementing them now.
+### Current implementation queue
+
+Implement bounded issues from the repository rather than asking the human principal to relay prompts between agents. Preferred order:
+
+1. **#5 — X timeline wire-contract blocker.** Correct `post.fields` to the documented `tweet.fields`, request `referenced_tweets`, and make M0 repost semantics explicit without flattening unsupported repost relationships.
+2. **#4 — safe X remote failure diagnostics.** Stop emitting arbitrary raw OAuth/API failure bodies while preserving useful structured status/category information.
+3. **#3 — resilient OAuth loopback callback.** Add bounded waiting and tolerate unrelated local requests without weakening state/error validation.
+4. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus boundaries into a no-network readiness check safe to paste into issue evidence.
+
+After each bounded issue:
+
+- run formatting, strict clippy, workspace tests, native Windows CI, and Rust 1.85 `--locked` CI;
+- update the issue/docs required by that task;
+- close the issue only when its acceptance criteria are actually satisfied;
+- do not begin the live X smoke test while a pre-live issue remains unresolved.
+
+After #2–#5 are closed and CI is green, the remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account. Do not close M0 until native login, credential persistence, real sync, durable checkpointing, index rebuild, local query, and the second incremental sync succeed against real X data.
+
+Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, multiple adapters, deep thread acquisition, or full repost/reblog ontology. The architecture must permit those later without implementing them now.
