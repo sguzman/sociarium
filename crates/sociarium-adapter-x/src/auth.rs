@@ -373,10 +373,7 @@ pub enum XOAuthError {
     #[error("X OAuth response JSON error: {0}")]
     Json(#[from] serde_json::Error),
     #[error("X OAuth endpoint returned HTTP {status} ({category})")]
-    Remote {
-        status: u16,
-        category: &'static str,
-    },
+    Remote { status: u16, category: &'static str },
 }
 
 #[cfg(test)]
