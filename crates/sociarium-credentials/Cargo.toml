@@ -11,4 +11,4 @@ sociarium-core = { path = "../sociarium-core" }
 thiserror.workspace = true
 
 [target.'cfg(windows)'.dependencies]
-keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }
+keyring = { version = "=3.6.3", default-features = false, features = ["windows-native"] }
