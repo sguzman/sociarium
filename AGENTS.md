@@ -13,17 +13,18 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 1. Sociarium is not an X/Twitter client with future generalization bolted on. It is a generic social-data substrate whose first adapter is X.
 2. Surfaces are adapters, not ontology.
 3. Profiles are first-class synchronization scopes. Never introduce a hidden global "current account" assumption into core APIs.
-4. A remote profile is not automatically a real-world person. Cross-profile identity links must be explicit and provenance-preserving.
-5. Preserve raw, normalized, and derived layers as distinct concepts.
-6. Durable corpus files are authoritative historical records. Indexes/caches must be rebuildable.
-7. The software source repository and the operator's corpus repository are separate authority domains. Do not default real corpus data into the public source checkout.
-8. Surface integrations are Rust-native. Do not add `xurl`, XMCP, Node, Go, Python, or another platform CLI as a runtime dependency to avoid implementing an adapter properly.
-9. Credentials are operational secret state outside the corpus. Persistent credential keys are profile-scoped; do not introduce a global surface credential singleton or store bearer material in TOML/corpus files.
-10. Private/authorized social data is not necessarily credential material. A corpus can be secret-free while still inappropriate to publish publicly.
-11. Git may version/transport corpus state, but it is not the persistence API. GitHub is never corpus authority.
-12. MCP is an external projection/interface. Core behavior must not depend on MCP.
-13. Remote writes are a separate capability boundary from local reads and should be conspicuous and auditable.
-14. Do not silently edit user goals/prompts into a different task. If implementation pressure reveals a design conflict, record the conflict and surface it.
+4. A remote profile is identified durably by surface + stable remote ID. Handles/display names are mutable observations, not identity keys. One local profile must never silently become a bucket for multiple remote profile IDs.
+5. A remote profile is not automatically a real-world person. Cross-profile identity links must be explicit and provenance-preserving.
+6. Preserve raw, normalized, and derived layers as distinct concepts.
+7. Durable corpus files are authoritative historical records. Indexes/caches must be rebuildable.
+8. The software source repository and the operator's corpus repository are separate authority domains. Do not default real corpus data into the public source checkout.
+9. Surface integrations are Rust-native. Do not add `xurl`, XMCP, Node, Go, Python, or another platform CLI as a runtime dependency to avoid implementing an adapter properly.
+10. Credentials are operational secret state outside the corpus. Persistent credential keys are profile-scoped; do not introduce a global surface credential singleton or store bearer material in TOML/corpus files.
+11. Private/authorized social data is not necessarily credential material. A corpus can be secret-free while still inappropriate to publish publicly.
+12. Git may version/transport corpus state, but it is not the persistence API. GitHub is never corpus authority.
+13. MCP is an external projection/interface. Core behavior must not depend on MCP.
+14. Remote writes are a separate capability boundary from local reads and should be conspicuous and auditable.
+15. Do not silently edit user goals/prompts into a different task. If implementation pressure reveals a design conflict, record the conflict and surface it.
 
 ## Engineering rules
 
@@ -33,6 +34,8 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 - Keep persistent secret storage behind `sociarium-credentials`; it stores opaque bytes keyed by generic profile identity and must not know surface token schemas.
 - Prefer stable typed identifiers over raw strings crossing every boundary.
 - Preserve remote stable IDs separately from mutable handles/display names.
+- If configuration omits a remote stable ID, an established binding must be recoverable from ordinary durable corpus evidence or equivalent canonical state, not only from SQLite/cache state.
+- Reject conflicting stable remote identity before a contradictory acquisition becomes canonical for an already-bound local profile.
 - Avoid premature universalization: normalize shared semantics, retain surface-specific extensions when semantics do not cleanly match.
 - Every durable transformation should be explainable from provenance.
 - Persist each acquisition page before advancing its durable cursor. Pagination state and completed incremental high-water state are not interchangeable.
@@ -51,7 +54,7 @@ M0 is one vertical slice:
 
 `configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
 
-The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. M0 is **not repository-complete** while issues #2–#6 remain open.
+The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. M0 is **not repository-complete** while issues #2–#7 remain open.
 
 ### Current implementation queue
 
@@ -61,7 +64,8 @@ Implement bounded issues from the repository rather than asking the human princi
 2. **#4 — safe X remote failure diagnostics.** Stop emitting arbitrary raw OAuth/API failure bodies while preserving useful structured status/category information.
 3. **#3 — resilient OAuth loopback callback.** Add bounded waiting and tolerate unrelated local requests without weakening state/error validation.
 4. **#6 — separate Git-safe corpus initialization.** Establish the operator corpus as a dedicated durable directory/repository, protect disposable/pending state from accidental Git history, and keep software source separate from social data.
-5. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus boundaries into a no-network readiness check safe to paste into issue evidence.
+5. **#7 — stable remote profile binding.** Establish/recover a durable surface + remote-ID binding for each local profile, prevent credential swaps from silently changing identity, and keep handles mutable after binding.
+6. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus/profile-binding boundaries into a no-network readiness check safe to paste into issue evidence.
 
 After each bounded issue:
 
@@ -70,6 +74,6 @@ After each bounded issue:
 - close the issue only when its acceptance criteria are actually satisfied;
 - do not begin the live X smoke test while a pre-live issue remains unresolved.
 
-After #2–#6 are closed and CI is green, the remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account, using the dedicated corpus boundary. Do not close M0 until native login, credential persistence, real sync, durable checkpointing, index rebuild, local query, and the second incremental sync succeed against real X data.
+After #2–#7 are closed and CI is green, the remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account, using the dedicated corpus boundary. Do not close M0 until stable remote identity is bound/verified, native login and credential persistence succeed, real sync and durable checkpointing succeed, the index rebuild/local query succeed, and a second incremental sync preserves the same bound remote profile.
 
 Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, multiple adapters, deep thread acquisition, full repost/reblog ontology, or general rich-text/article parsing. The architecture must permit those later without implementing them now.
