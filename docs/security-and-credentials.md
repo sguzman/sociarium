@@ -16,7 +16,7 @@ Never write these into the Git-tracked corpus:
 - PKCE code verifiers;
 - one-time authorization codes.
 
-The X adapter currently models OAuth credentials in memory only. `XOAuthSession` and `XTokenSet` implement redacted debug formatting so routine diagnostics do not dump their secret fields.
+`XOAuthSession` and `XTokenSet` implement redacted debug formatting so routine diagnostics do not dump their secret fields.
 
 Persistent credential storage is a separate M0 implementation step. Its contract is:
 
@@ -27,6 +27,18 @@ Persistent credential storage is a separate M0 implementation step. Its contract
 5. diagnostics must report credential state without printing credential values.
 
 On desktop systems, an OS credential store/keyring is preferred over plaintext files. A fallback file store, if ever added, must be explicit, ignored by Git, permission-restricted where the OS allows it, and clearly documented as lower assurance.
+
+## Temporary M0 environment bridge
+
+The profile sync command is now wired end-to-end, but persistent credential lookup and the local OAuth callback listener are not yet wired into the CLI. For live X testing, the CLI currently accepts an already-authorized user access token through:
+
+```text
+SOCIARIUM_X_ACCESS_TOKEN
+```
+
+This is intentionally temporary. The environment variable is process operational state, not configuration and not corpus data. The CLI only reports whether it is present; it never prints the value.
+
+The next credential slice replaces this bridge with profile-scoped OS credential-store entries and native OAuth2/PKCE authorization/refresh handling.
 
 ## X OAuth policy
 
@@ -40,7 +52,7 @@ offline.access
 
 `offline.access` is requested so a refresh token can support future unattended incremental synchronization. Write scopes are intentionally absent from M0.
 
-The redirect URI is configuration for the registered X Developer App and must match the URI registered with X exactly. The eventual CLI callback listener should bind to loopback only and validate OAuth `state` before exchanging the short-lived authorization code.
+The redirect URI is configuration for the registered X Developer App and must match the URI registered with X exactly. The CLI callback listener should bind to loopback only and validate OAuth `state` before exchanging the short-lived authorization code.
 
 ## Raw evidence is not credential storage
 
