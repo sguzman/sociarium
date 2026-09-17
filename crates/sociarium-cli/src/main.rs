@@ -1,5 +1,6 @@
 use std::env;
 use std::error::Error;
+use std::fs;
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
@@ -19,6 +20,13 @@ use url::Url;
 
 const X_ACCESS_TOKEN_ENV: &str = "SOCIARIUM_X_ACCESS_TOKEN";
 const X_REFRESH_LEEWAY_MINUTES: i64 = 5;
+const CORPUS_CONFIG_FILE: &str = "sociarium.toml";
+const CORPUS_CONFIG_TEMPLATE: &str = r#"schema_version = 1
+
+# Add non-secret surface settings and one or more [[profiles]] entries here.
+# Bearer credentials, refresh tokens, client secrets, passwords, and session
+# cookies never belong in this file.
+"#;
 
 #[derive(Debug, Parser)]
 #[command(name = "sociarium", version, about = "User-sovereign social corpus")]
@@ -39,6 +47,11 @@ struct Cli {
 enum Command {
     /// Check the installation and adapter registry.
     Doctor,
+    /// Initialize and inspect durable corpus repositories.
+    Corpus {
+        #[command(subcommand)]
+        command: CorpusCommand,
+    },
     /// Validate corpus configuration.
     Config {
         #[command(subcommand)]
@@ -75,6 +88,12 @@ enum Command {
         #[command(subcommand)]
         command: PostsCommand,
     },
+}
+
+#[derive(Debug, Subcommand)]
+enum CorpusCommand {
+    /// Initialize a dedicated Git-safe Sociarium corpus directory.
+    Init { path: PathBuf },
 }
 
 #[derive(Debug, Subcommand)]
@@ -135,6 +154,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match cli.command {
         Command::Doctor => doctor(),
+        Command::Corpus {
+            command: CorpusCommand::Init { path },
+        } => corpus_init(&path)?,
         Command::Config {
             command: ConfigCommand::Check,
         } => config_check(&cli.config)?,
@@ -171,6 +193,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
         } => posts_search(&cli.corpus, &query, profile.as_deref(), limit)?,
     }
 
+    Ok(())
+}
+
+fn corpus_init(path: &Path) -> Result<(), Box<dyn Error>> {
+    let store = CorpusStore::initialize(path)?;
+    let config_path = store.layout().root().join(CORPUS_CONFIG_FILE);
+    if !config_path.exists() {
+        fs::write(&config_path, CORPUS_CONFIG_TEMPLATE)?;
+    }
+    SociariumConfig::load(&config_path)?;
+
+    println!("initialized Sociarium corpus: {}", store.layout().root().display());
+    println!("corpus marker: {}", store.layout().marker_path().display());
+    println!("corpus config: {}", config_path.display());
+    println!("Git is optional; no repository was initialized or pushed automatically.");
     Ok(())
 }
 
@@ -335,7 +372,7 @@ async fn sync_one_profile(
 ) -> Result<(), Box<dyn Error>> {
     let config = SociariumConfig::load(config_path)?;
     let profile = configured_profile(&config, profile_id)?;
-    let store = CorpusStore::open(corpus)?;
+    let store = CorpusStore::open_initialized(corpus)?;
 
     let report = match profile.surface.as_str() {
         "x" => {
@@ -695,6 +732,7 @@ fn send_callback_response(stream: &mut TcpStream, status: u16, message: &str) ->
 }
 
 fn index_rebuild(corpus: &Path) -> Result<(), Box<dyn Error>> {
+    CorpusStore::open_initialized(corpus)?;
     let index = SearchIndex::for_corpus(corpus);
     let stats = index.rebuild()?;
     println!(
@@ -708,6 +746,7 @@ fn index_rebuild(corpus: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn posts_list(corpus: &Path, profile: Option<&str>, limit: usize) -> Result<(), Box<dyn Error>> {
+    CorpusStore::open_initialized(corpus)?;
     let index = SearchIndex::for_corpus(corpus);
     for hit in index.list_posts(profile, limit)? {
         print_hit(&hit);
@@ -721,6 +760,7 @@ fn posts_search(
     profile: Option<&str>,
     limit: usize,
 ) -> Result<(), Box<dyn Error>> {
+    CorpusStore::open_initialized(corpus)?;
     let index = SearchIndex::for_corpus(corpus);
     for hit in index.search_posts(query, profile, limit)? {
         print_hit(&hit);
@@ -747,6 +787,29 @@ mod tests {
     use std::thread;
 
     use super::*;
+
+    #[test]
+    fn corpus_init_writes_parseable_nonsecret_config_template() {
+        let path = std::env::temp_dir().join(format!(
+            "sociarium-cli-corpus-init-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&path);
+
+        corpus_init(&path).unwrap();
+        let config_path = path.join(CORPUS_CONFIG_FILE);
+        let config = SociariumConfig::load(&config_path).unwrap();
+        let config_text = fs::read_to_string(&config_path).unwrap();
+
+        assert_eq!(config.schema_version, 1);
+        assert!(path.join("sociarium-corpus.json").is_file());
+        assert!(path.join(".gitignore").is_file());
+        assert!(!config_text.contains("access_token"));
+        assert!(!config_text.contains("refresh_token"));
+        assert!(!config_text.contains("client_secret"));
+
+        fs::remove_dir_all(path).unwrap();
+    }
 
     fn test_session() -> XOAuthSession {
         XOAuthConfig::new("test-client", "http://127.0.0.1:49152/oauth/x/callback")
