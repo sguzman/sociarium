@@ -8,10 +8,10 @@ Sociarium is a Rust-native, user-sovereign social-data substrate that synchroniz
 
 Sociarium is in M0. The first concrete integration target is X, but X does not define the core model.
 
-The first vertical slice is now implementation-complete in the repository:
+The first vertical slice is structurally implemented:
 
 1. generic profile and surface configuration;
-2. native X OAuth2 Authorization Code + PKCE;
+2. native X OAuth2 Authorization Code + S256 PKCE;
 3. profile-scoped Windows Credential Manager persistence;
 4. automatic X token refresh;
 5. direct Rust X API acquisition;
@@ -20,9 +20,11 @@ The first vertical slice is now implementation-complete in the repository:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-The remaining M0 validation gate is a live smoke test against a real registered X Developer App and authorized account. Unit/fixture coverage and CI validate the implementation without requiring live credentials, but they do not substitute for one real end-to-end authorization and synchronization run.
+A pre-live audit against the current X API contract found remaining repository-side M0 hardening. In particular, issue #5 records a confirmed X wire-protocol defect in the current user-timeline request (`post.fields` must be corrected to the remote API's `tweet.fields`, and relationship/repost semantics must be deliberate). Issues #2–#4 cover local preflight diagnostics, resilient loopback callback handling, and safe remote-error diagnostics.
 
-Build resolution is also now reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
+**Do not treat the live X smoke test as the next step until issues #2–#5 are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App and authorized account.
+
+Build resolution is reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
 
 MCP comes after the corpus and query boundaries are stable. It is a projection of Sociarium, not Sociarium's internal API.
 
@@ -35,7 +37,7 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 - **Three evidence layers:** raw remote evidence, normalized corpus objects, and derived/indexed views remain distinguishable.
 - **Rebuildable indexes:** SQLite/search indexes and caches are disposable projections, never the only copy of corpus data.
 - **Direct Rust integrations:** surface adapters talk to remote APIs directly from Rust. External platform CLIs such as `xurl` are not runtime dependencies.
-- **Credential separation:** bearer credentials are operational secret state outside the Git-tracked corpus.
+- **Credential separation:** bearer credentials are operational secret state outside the Git-tracked corpus and configuration.
 - **Conspicuous writes:** reading/querying local data is broad; remote mutation is a separate capability boundary.
 - **Inspectable repository:** the corpus should remain understandable even if the Sociarium executable no longer runs.
 
@@ -55,7 +57,7 @@ Planned later: MCP, media acquisition, additional adapters, broader X corpus obj
 
 ## Configuration
 
-Copy [`sociarium.example.toml`](sociarium.example.toml), register an X Developer App, and set its non-secret client configuration:
+Copy [`sociarium.example.toml`](sociarium.example.toml) to the repository-root `sociarium.toml` for local use. That filename is ignored by default so machine/profile-local configuration is not accidentally published. It is still **not a secret store**.
 
 ```toml
 schema_version = 1
@@ -72,7 +74,7 @@ ownership = "self_owned"
 enabled = true
 ```
 
-Bearer credentials do not belong in this file.
+Bearer credentials and client secrets do not belong in this file.
 
 Validate configuration and inspect profiles:
 
@@ -81,7 +83,7 @@ cargo run -p sociarium-cli --locked -- --config sociarium.toml config check
 cargo run -p sociarium-cli --locked -- --config sociarium.toml profiles list
 ```
 
-On Windows, authorize the profile once through the native loopback OAuth flow:
+The intended Windows authorization path is:
 
 ```text
 cargo run -p sociarium-cli --locked -- --config sociarium.toml auth login x-main
@@ -90,13 +92,15 @@ cargo run -p sociarium-cli --locked -- --config sociarium.toml auth status x-mai
 
 The CLI prints the X authorization URL, validates the loopback callback, exchanges the authorization code, and stores the resulting token envelope in Windows Credential Manager. Subsequent syncs load and refresh that profile's credential automatically.
 
-Then synchronize and query the local corpus:
+The intended synchronization/query path is:
 
 ```text
 cargo run -p sociarium-cli --locked -- --config sociarium.toml --corpus corpus sync x-main
 cargo run -p sociarium-cli --locked -- --corpus corpus posts list --profile x-main
 cargo run -p sociarium-cli --locked -- --corpus corpus posts search sociarium --profile x-main
 ```
+
+These live commands describe the M0 path, but the deliberate real-X smoke run is currently blocked on issues #2–#5 above.
 
 `SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
 
@@ -113,6 +117,7 @@ Start with:
 - [`docs/repository-format.md`](docs/repository-format.md)
 - [`docs/search-index.md`](docs/search-index.md)
 - [`docs/roadmap.md`](docs/roadmap.md)
+- [`docs/x-live-smoke-test.md`](docs/x-live-smoke-test.md)
 - [`docs/decisions/`](docs/decisions/) for architectural decision records
 - [`AGENTS.md`](AGENTS.md) for the implementation contract
 
