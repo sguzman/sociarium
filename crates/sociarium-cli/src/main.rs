@@ -741,7 +741,6 @@ fn print_hit(hit: &PostHit) {
     );
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::io::{Read as _, Write as _};
