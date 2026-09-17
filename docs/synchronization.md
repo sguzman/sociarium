@@ -46,6 +46,24 @@ During a multi-page traversal, `since_id` remains the prior completed high-water
 
 This also makes interruption recovery safe: a crash after a page is persisted resumes from the cursor stored with that page rather than repeating or skipping the page transition.
 
+## Stable remote identity before sync
+
+Profile synchronization resolves corpus identity before contacting the remote surface.
+
+For a configured local profile, `CorpusStore::profile_binding` scans completed durable `ProfileSnapshot` observations for that profile/surface and reports `Unbound`, `Bound`, or `Conflicted`.
+
+The CLI composition layer then applies these rules:
+
+1. an explicitly configured `remote_id` must agree with a durable binding if one exists;
+2. if configuration omits `remote_id` but durable evidence is bound, inject the durable ID into the working profile passed to the adapter;
+3. conflicted durable identity evidence is terminal and no remote request is made;
+4. for an unbound X profile, the X adapter requires either an explicit remote ID or a configured handle that matches the authenticated username case-insensitively;
+5. after binding, X checks the stable remote ID and does not require the mutable handle to remain unchanged.
+
+The corpus store repeats stable-ID validation before an acquisition is made canonical. Adapter-side rejection is therefore an early safety check, not the only integrity boundary.
+
+This prevents a logout/login or credential swap from silently changing what a local profile means while allowing legitimate remote handle changes.
+
 ## Credential resolution before sync
 
 Credential lookup is deliberately outside the generic synchronization runner. The runner receives an already-constructed adapter; it does not know how a surface authenticates.
