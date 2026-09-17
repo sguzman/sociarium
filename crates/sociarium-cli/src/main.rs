@@ -204,7 +204,10 @@ fn corpus_init(path: &Path) -> Result<(), Box<dyn Error>> {
     }
     SociariumConfig::load(&config_path)?;
 
-    println!("initialized Sociarium corpus: {}", store.layout().root().display());
+    println!(
+        "initialized Sociarium corpus: {}",
+        store.layout().root().display()
+    );
     println!("corpus marker: {}", store.layout().marker_path().display());
     println!("corpus config: {}", config_path.display());
     println!("Git is optional; no repository was initialized or pushed automatically.");
@@ -790,10 +793,8 @@ mod tests {
 
     #[test]
     fn corpus_init_writes_parseable_nonsecret_config_template() {
-        let path = std::env::temp_dir().join(format!(
-            "sociarium-cli-corpus-init-{}",
-            std::process::id()
-        ));
+        let path =
+            std::env::temp_dir().join(format!("sociarium-cli-corpus-init-{}", std::process::id()));
         let _ = fs::remove_dir_all(&path);
 
         corpus_init(&path).unwrap();
