@@ -49,13 +49,18 @@ fn normalize_post(
     let remote_id = RemoteId::new(post.id.clone()).map_err(|error| error.to_string())?;
     let reply_to = reference_id(post, "replied_to")?;
     let quote_of = reference_id(post, "quoted")?;
+    let text = post
+        .note_tweet
+        .as_ref()
+        .map(|note_tweet| note_tweet.text.clone())
+        .unwrap_or_else(|| post.text.clone());
 
     Ok(NormalizedRecord::Post(Post {
         id,
         profile_id: tracked.id.clone(),
         remote_id,
         created_at: post.created_at,
-        text: post.text.clone(),
+        text,
         reply_to,
         quote_of,
         canonical_url: Some(format!("https://x.com/{username}/status/{}", post.id)),
@@ -139,6 +144,35 @@ mod tests {
         assert_eq!(
             post.canonical_url.as_deref(),
             Some("https://x.com/sguzman/status/200")
+        );
+    }
+
+    #[test]
+    fn normalizes_short_posts_from_text() {
+        let envelope: XPostsEnvelope =
+            serde_json::from_str(include_str!("../tests/fixtures/posts.json")).unwrap();
+        let records =
+            normalize_posts(&tracked_profile(), "sguzman", &envelope, &observation()).unwrap();
+
+        let NormalizedRecord::Post(post) = &records[0] else {
+            panic!("expected post");
+        };
+        assert_eq!(post.text, "first fixture post");
+    }
+
+    #[test]
+    fn prefers_full_note_tweet_text_when_present() {
+        let envelope: XPostsEnvelope =
+            serde_json::from_str(include_str!("../tests/fixtures/posts.json")).unwrap();
+        let records =
+            normalize_posts(&tracked_profile(), "sguzman", &envelope, &observation()).unwrap();
+
+        let NormalizedRecord::Post(post) = &records[2] else {
+            panic!("expected post");
+        };
+        assert_eq!(
+            post.text,
+            "this is the complete long-form fixture post, preserved from note_tweet.text"
         );
     }
 }
