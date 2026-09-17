@@ -270,7 +270,8 @@ fn auth_status(config_path: &Path, profile_id: &str) -> Result<(), Box<dyn Error
     let config = SociariumConfig::load(config_path)?;
     let profile = configured_profile(&config, profile_id)?;
     let key = oauth_credential_key(profile);
-    let environment_override = env::var_os(X_ACCESS_TOKEN_ENV).is_some() && profile.surface.as_str() == "x";
+    let environment_override =
+        env::var_os(X_ACCESS_TOKEN_ENV).is_some() && profile.surface.as_str() == "x";
 
     match NativeCredentialStore::new() {
         Ok(store) => match store.load(&key)? {
@@ -401,10 +402,7 @@ async fn x_access_token(
     })?;
     let mut tokens = XStoredTokens::from_secret_bytes(&secret)?;
 
-    if tokens.should_refresh(
-        Utc::now(),
-        Duration::minutes(X_REFRESH_LEEWAY_MINUTES),
-    ) {
+    if tokens.should_refresh(Utc::now(), Duration::minutes(X_REFRESH_LEEWAY_MINUTES)) {
         let prior_refresh_token = tokens.refresh_token().map(str::to_owned).ok_or_else(|| {
             io::Error::new(
                 io::ErrorKind::PermissionDenied,
@@ -447,7 +445,10 @@ fn oauth_credential_key(profile: &TrackedProfile) -> CredentialKey {
 fn x_oauth_config(config: &SociariumConfig) -> Result<(XOAuthConfig, String), Box<dyn Error>> {
     let client_id = required_surface_setting(config, "x", "client_id")?;
     let redirect_uri = required_surface_setting(config, "x", "redirect_uri")?.to_owned();
-    Ok((XOAuthConfig::new(client_id, &redirect_uri)?, redirect_uri))
+    Ok((
+        XOAuthConfig::new(client_id, &redirect_uri)?,
+        redirect_uri,
+    ))
 }
 
 fn required_surface_setting<'a>(
@@ -584,9 +585,8 @@ fn send_callback_response(
         405 => "Method Not Allowed",
         _ => "Error",
     };
-    let body = format!(
-        "<!doctype html><meta charset=\"utf-8\"><title>Sociarium</title><p>{message}</p>"
-    );
+    let body =
+        format!("<!doctype html><meta charset=\"utf-8\"><title>Sociarium</title><p>{message}</p>");
     write!(
         stream,
         "HTTP/1.1 {status} {reason}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
