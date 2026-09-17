@@ -1,0 +1,17 @@
+[package]
+name = "sociarium-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "sociarium"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+sociarium-adapter = { path = "../sociarium-adapter" }
+sociarium-adapter-x = { path = "../sociarium-adapter-x" }
+tokio.workspace = true

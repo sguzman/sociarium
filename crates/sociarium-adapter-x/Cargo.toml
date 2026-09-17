@@ -1,0 +1,12 @@
+[package]
+name = "sociarium-adapter-x"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+sociarium-adapter = { path = "../sociarium-adapter" }
+sociarium-core = { path = "../sociarium-core" }
