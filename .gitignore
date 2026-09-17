@@ -1,5 +1,6 @@
 /target/
 /.sociarium/
+/sociarium.toml
 *.sqlite
 *.sqlite3
 *.db
