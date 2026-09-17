@@ -41,6 +41,36 @@ impl Default for XAdapter {
     }
 }
 
+fn validate_authenticated_profile(
+    profile: &TrackedProfile,
+    user: &models::XUser,
+) -> Result<(), AdapterError> {
+    if let Some(expected_remote_id) = &profile.remote_id {
+        if expected_remote_id.as_str() != user.id {
+            return Err(AdapterError::Data(format!(
+                "X remote profile id mismatch for {}: expected {} got {}",
+                profile.id, expected_remote_id, user.id
+            )));
+        }
+        return Ok(());
+    }
+
+    if let Some(expected_handle) = profile.handle.as_deref() {
+        if expected_handle.eq_ignore_ascii_case(&user.username) {
+            return Ok(());
+        }
+        return Err(AdapterError::Data(format!(
+            "unbound X profile {} expected enrollment handle @{} but authenticated user is @{}",
+            profile.id, expected_handle, user.username
+        )));
+    }
+
+    Err(AdapterError::Data(format!(
+        "unbound X profile {} requires a configured remote_id or handle before first enrollment",
+        profile.id
+    )))
+}
+
 #[async_trait]
 impl SocialAdapter for XAdapter {
     fn surface_id(&self) -> SurfaceId {
@@ -92,14 +122,7 @@ impl SocialAdapter for XAdapter {
         };
 
         let me = client.get_me().await.map_err(map_api_error)?;
-        if let Some(configured_remote_id) = &profile.remote_id {
-            if configured_remote_id.as_str() != me.value.data.id.as_str() {
-                return Err(AdapterError::Data(format!(
-                    "configured X remote id {} does not match authenticated user {}",
-                    configured_remote_id, me.value.data.id
-                )));
-            }
-        }
+        validate_authenticated_profile(profile, &me.value.data)?;
 
         let user_id = me.value.data.id.clone();
         let username = me.value.data.username.clone();
@@ -260,9 +283,66 @@ fn map_api_error(error: XApiError) -> AdapterError {
 #[cfg(test)]
 mod tests {
     use sociarium_adapter::{Capability, SocialAdapter};
-    use sociarium_core::{ProfileId, ProfileOwnership, SurfaceId};
+    use sociarium_core::{ProfileId, ProfileOwnership, RemoteId, SurfaceId};
 
     use super::*;
+    use crate::models::XUserEnvelope;
+
+    fn tracked_profile(remote_id: Option<&str>, handle: Option<&str>) -> TrackedProfile {
+        TrackedProfile {
+            id: ProfileId::new("x-main").unwrap(),
+            surface: SurfaceId::new("x").unwrap(),
+            remote_id: remote_id.map(|value| RemoteId::new(value).unwrap()),
+            handle: handle.map(str::to_owned),
+            ownership: ProfileOwnership::SelfOwned,
+            enabled: true,
+        }
+    }
+
+    fn fixture_user() -> models::XUser {
+        let envelope: XUserEnvelope =
+            serde_json::from_str(include_str!("../tests/fixtures/me.json")).unwrap();
+        envelope.data
+    }
+
+    #[test]
+    fn bound_profile_uses_remote_id_and_allows_handle_change() {
+        let profile = tracked_profile(Some("6679733"), Some("old-handle"));
+        validate_authenticated_profile(&profile, &fixture_user()).unwrap();
+    }
+
+    #[test]
+    fn bound_profile_rejects_different_remote_id() {
+        let profile = tracked_profile(Some("999999"), Some("sguzman"));
+        assert!(matches!(
+            validate_authenticated_profile(&profile, &fixture_user()),
+            Err(AdapterError::Data(_))
+        ));
+    }
+
+    #[test]
+    fn first_enrollment_accepts_matching_handle_case_insensitively() {
+        let profile = tracked_profile(None, Some("SGUZMAN"));
+        validate_authenticated_profile(&profile, &fixture_user()).unwrap();
+    }
+
+    #[test]
+    fn first_enrollment_rejects_different_handle() {
+        let profile = tracked_profile(None, Some("someone-else"));
+        assert!(matches!(
+            validate_authenticated_profile(&profile, &fixture_user()),
+            Err(AdapterError::Data(_))
+        ));
+    }
+
+    #[test]
+    fn first_enrollment_requires_remote_id_or_handle_intent() {
+        let profile = tracked_profile(None, None);
+        assert!(matches!(
+            validate_authenticated_profile(&profile, &fixture_user()),
+            Err(AdapterError::Data(_))
+        ));
+    }
 
     #[test]
     fn x_is_only_an_adapter_identity() {
@@ -274,14 +354,7 @@ mod tests {
     #[tokio::test]
     async fn unauthenticated_adapter_fails_before_network_access() {
         let adapter = XAdapter::new();
-        let profile = TrackedProfile {
-            id: ProfileId::new("x-main").unwrap(),
-            surface: SurfaceId::new("x").unwrap(),
-            remote_id: None,
-            handle: Some("sguzman".into()),
-            ownership: ProfileOwnership::SelfOwned,
-            enabled: true,
-        };
+        let profile = tracked_profile(None, Some("sguzman"));
 
         assert!(matches!(
             adapter.sync_profile(&profile, None).await,
