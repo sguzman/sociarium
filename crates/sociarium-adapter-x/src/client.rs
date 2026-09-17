@@ -5,6 +5,7 @@ use url::Url;
 use crate::models::{XPostsEnvelope, XUserEnvelope};
 
 const API_BASE: &str = "https://api.x.com/2/";
+const USER_POST_FIELDS: &str = "created_at,referenced_tweets,note_tweet";
 
 #[derive(Clone)]
 pub struct XApiClient {
@@ -40,23 +41,7 @@ impl XApiClient {
         pagination_token: Option<&str>,
         since_id: Option<&str>,
     ) -> Result<RawResponse<XPostsEnvelope>, XApiError> {
-        validate_user_id(user_id)?;
-        if let Some(since_id) = since_id {
-            validate_post_id(since_id)?;
-        }
-
-        let mut url = Url::parse(&format!("{API_BASE}users/{user_id}/tweets"))?;
-        {
-            let mut query = url.query_pairs_mut();
-            query.append_pair("max_results", "100");
-            query.append_pair("post.fields", "created_at");
-            if let Some(pagination_token) = pagination_token {
-                query.append_pair("pagination_token", pagination_token);
-            }
-            if let Some(since_id) = since_id {
-                query.append_pair("since_id", since_id);
-            }
-        }
+        let url = build_user_posts_url(user_id, pagination_token, since_id)?;
         self.get_json(url).await
     }
 
@@ -87,6 +72,32 @@ impl XApiClient {
         let value = serde_json::from_slice(&bytes)?;
         Ok(RawResponse { value, bytes })
     }
+}
+
+fn build_user_posts_url(
+    user_id: &str,
+    pagination_token: Option<&str>,
+    since_id: Option<&str>,
+) -> Result<Url, XApiError> {
+    validate_user_id(user_id)?;
+    if let Some(since_id) = since_id {
+        validate_post_id(since_id)?;
+    }
+
+    let mut url = Url::parse(&format!("{API_BASE}users/{user_id}/tweets"))?;
+    {
+        let mut query = url.query_pairs_mut();
+        query.append_pair("max_results", "100");
+        query.append_pair("tweet.fields", USER_POST_FIELDS);
+        query.append_pair("exclude", "retweets");
+        if let Some(pagination_token) = pagination_token {
+            query.append_pair("pagination_token", pagination_token);
+        }
+        if let Some(since_id) = since_id {
+            query.append_pair("since_id", since_id);
+        }
+    }
+    Ok(url)
 }
 
 pub(crate) struct RawResponse<T> {
@@ -132,6 +143,8 @@ fn is_snowflake(value: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
     use super::*;
 
     #[test]
@@ -146,5 +159,31 @@ mod tests {
     fn accepts_x_snowflake_shaped_ids() {
         validate_user_id("2244994945").unwrap();
         validate_post_id("1844674407370955161").unwrap();
+    }
+
+    #[test]
+    fn user_posts_url_uses_current_x_wire_fields_and_excludes_retweets() {
+        let url = build_user_posts_url("2244994945", Some("NEXT TOKEN"), Some("1844674407370955161"))
+            .unwrap();
+        let query = url
+            .query_pairs()
+            .into_owned()
+            .collect::<BTreeMap<_, _>>();
+
+        assert_eq!(query.get("max_results").map(String::as_str), Some("100"));
+        assert_eq!(
+            query.get("tweet.fields").map(String::as_str),
+            Some(USER_POST_FIELDS)
+        );
+        assert!(!query.contains_key("post.fields"));
+        assert_eq!(query.get("exclude").map(String::as_str), Some("retweets"));
+        assert_eq!(
+            query.get("pagination_token").map(String::as_str),
+            Some("NEXT TOKEN")
+        );
+        assert_eq!(
+            query.get("since_id").map(String::as_str),
+            Some("1844674407370955161")
+        );
     }
 }
