@@ -3,14 +3,16 @@ use std::fmt;
 
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use chrono::{DateTime, Duration, Utc};
 use rand::{Rng, distributions::Alphanumeric};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 use url::Url;
 
 const AUTHORIZE_URL: &str = "https://x.com/i/oauth2/authorize";
 const TOKEN_URL: &str = "https://api.x.com/2/oauth2/token";
+const X_STORED_TOKEN_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Clone, Debug)]
 pub struct XOAuthConfig {
@@ -201,6 +203,30 @@ impl XTokenSet {
     pub fn scope(&self) -> Option<&str> {
         self.scope.as_deref()
     }
+
+    pub fn into_stored(
+        self,
+        received_at: DateTime<Utc>,
+        previous_refresh_token: Option<&str>,
+    ) -> XStoredTokens {
+        let expires_at = if self.expires_in_seconds == 0 {
+            None
+        } else {
+            let seconds = i64::try_from(self.expires_in_seconds).unwrap_or(i64::MAX);
+            received_at.checked_add_signed(Duration::seconds(seconds))
+        };
+        XStoredTokens {
+            schema_version: X_STORED_TOKEN_SCHEMA_VERSION,
+            access_token: self.access_token,
+            refresh_token: self
+                .refresh_token
+                .or_else(|| previous_refresh_token.map(str::to_owned)),
+            token_type: self.token_type,
+            received_at,
+            expires_at,
+            scope: self.scope,
+        }
+    }
 }
 
 impl fmt::Debug for XTokenSet {
@@ -213,6 +239,96 @@ impl fmt::Debug for XTokenSet {
             )
             .field("token_type", &self.token_type)
             .field("expires_in_seconds", &self.expires_in_seconds)
+            .field("scope", &self.scope)
+            .finish()
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct XStoredTokens {
+    schema_version: u32,
+    access_token: String,
+    #[serde(default)]
+    refresh_token: Option<String>,
+    token_type: String,
+    received_at: DateTime<Utc>,
+    #[serde(default)]
+    expires_at: Option<DateTime<Utc>>,
+    #[serde(default)]
+    scope: Option<String>,
+}
+
+impl XStoredTokens {
+    pub fn from_secret_bytes(bytes: &[u8]) -> Result<Self, XOAuthError> {
+        let stored: Self = serde_json::from_slice(bytes)?;
+        stored.validate()?;
+        Ok(stored)
+    }
+
+    pub fn to_secret_bytes(&self) -> Result<Vec<u8>, XOAuthError> {
+        self.validate()?;
+        Ok(serde_json::to_vec(self)?)
+    }
+
+    pub fn access_token(&self) -> &str {
+        &self.access_token
+    }
+
+    pub fn refresh_token(&self) -> Option<&str> {
+        self.refresh_token.as_deref()
+    }
+
+    pub fn expires_at(&self) -> Option<DateTime<Utc>> {
+        self.expires_at
+    }
+
+    pub fn should_refresh(&self, now: DateTime<Utc>, leeway: Duration) -> bool {
+        self.expires_at
+            .is_some_and(|expires_at| expires_at <= now + leeway)
+    }
+
+    fn validate(&self) -> Result<(), XOAuthError> {
+        if self.schema_version != X_STORED_TOKEN_SCHEMA_VERSION {
+            return Err(XOAuthError::InvalidStoredCredential(format!(
+                "unsupported schema version {}; expected {}",
+                self.schema_version, X_STORED_TOKEN_SCHEMA_VERSION
+            )));
+        }
+        if self.access_token.trim().is_empty() {
+            return Err(XOAuthError::InvalidStoredCredential(
+                "access token is blank".to_owned(),
+            ));
+        }
+        if self.token_type.trim().is_empty() {
+            return Err(XOAuthError::InvalidStoredCredential(
+                "token type is blank".to_owned(),
+            ));
+        }
+        if self
+            .refresh_token
+            .as_deref()
+            .is_some_and(|value| value.trim().is_empty())
+        {
+            return Err(XOAuthError::InvalidStoredCredential(
+                "refresh token is blank".to_owned(),
+            ));
+        }
+        Ok(())
+    }
+}
+
+impl fmt::Debug for XStoredTokens {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("XStoredTokens")
+            .field("schema_version", &self.schema_version)
+            .field("access_token", &"[redacted]")
+            .field(
+                "refresh_token",
+                &self.refresh_token.as_ref().map(|_| "[redacted]"),
+            )
+            .field("token_type", &self.token_type)
+            .field("received_at", &self.received_at)
+            .field("expires_at", &self.expires_at)
             .field("scope", &self.scope)
             .finish()
     }
@@ -249,6 +365,8 @@ pub enum XOAuthError {
     InvalidConfig(&'static str),
     #[error("invalid X OAuth callback: {0}")]
     InvalidCallback(&'static str),
+    #[error("invalid stored X credential: {0}")]
+    InvalidStoredCredential(String),
     #[error("X OAuth URL error: {0}")]
     Url(#[from] url::ParseError),
     #[error("X OAuth transport error: {0}")]
@@ -302,5 +420,28 @@ mod tests {
         let rendered = format!("{session:?}");
         assert!(rendered.contains("[redacted]"));
         assert!(!rendered.contains(&session.code_verifier));
+    }
+
+    #[test]
+    fn stored_token_roundtrip_preserves_refresh_without_debug_leak() {
+        let received_at = Utc::now();
+        let token_set = XTokenSet {
+            access_token: "access-secret".to_owned(),
+            refresh_token: None,
+            token_type: "bearer".to_owned(),
+            expires_in_seconds: 3600,
+            scope: Some("tweet.read users.read offline.access".to_owned()),
+        };
+        let stored = token_set.into_stored(received_at, Some("prior-refresh-secret"));
+        let bytes = stored.to_secret_bytes().unwrap();
+        let parsed = XStoredTokens::from_secret_bytes(&bytes).unwrap();
+
+        assert_eq!(parsed.access_token(), "access-secret");
+        assert_eq!(parsed.refresh_token(), Some("prior-refresh-secret"));
+        assert!(parsed.should_refresh(received_at + Duration::seconds(3590), Duration::seconds(30)));
+
+        let rendered = format!("{parsed:?}");
+        assert!(!rendered.contains("access-secret"));
+        assert!(!rendered.contains("prior-refresh-secret"));
     }
 }
