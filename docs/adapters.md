@@ -71,10 +71,16 @@ The X adapter talks directly to the X API from Rust and currently owns:
 
 The X Developer App remains remote registration state required by X; it is not a local runtime component to replace.
 
-### M0 post relationship boundary
+### M0 Post fidelity boundary
 
 The generic `Post` model already supports portable `reply_to` and `quote_of` references. The X payload model understands `referenced_tweets` / relationship kinds and can normalize `replied_to` and `quoted` references.
 
-The live X request must explicitly request the remote `referenced_tweets` field for those relationships to exist in production data. Repost/retweet relationships are not yet represented generically in M0 and must not be silently flattened. Issue #5 tracks the pre-live request/semantics correction.
+The live X request must explicitly request the remote `referenced_tweets` field for those relationships to exist in production data. Repost/retweet relationships are not yet represented generically in M0 and must not be silently flattened.
 
-X wire names remain X wire names. The remote API still uses parameter names such as `tweet.fields` and response fields such as `referenced_tweets`; the fact that Sociarium's portable ontology calls the object a `Post` does not justify renaming remote protocol parameters.
+M0 must also preserve the best complete authored text the X payload exposes. X uses the selectable `note_tweet` field for long-form Note Tweet data, and current X documentation states that Posts longer than 280 characters keep their full text there rather than in the ordinary `text` field. When `note_tweet.text` is present, the normalized generic `Post.text` should therefore use that full value and fall back to `text` otherwise.
+
+This requirement does **not** force M0 to normalize every rich-text entity or article feature. It is a fidelity rule for the already-existing portable `Post.text` field. Successful raw evidence remains available for later richer interpretation.
+
+Issue #5 tracks the pre-live wire/data-fidelity correction: use the remote `tweet.fields` parameter, request `created_at`, `referenced_tweets`, and `note_tweet`, preserve full text and supported reply/quote references, and make the M0 repost policy explicit.
+
+X wire names remain X wire names. The remote API uses parameter/field names such as `tweet.fields`, `referenced_tweets`, and `note_tweet`; the fact that Sociarium's portable ontology calls the object a `Post` does not justify renaming remote protocol parameters.
