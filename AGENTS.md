@@ -35,6 +35,8 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 - New architectural decisions should update docs and, when consequential, add or amend an ADR under `docs/decisions/`.
 - A feature is not complete when code works but repository format, CLI semantics, or architectural behavior changed without documentation.
 - Rust 1.85 is the declared MSRV. Keep workspace resolver 3 enabled, preserve MSRV CI, and treat a dependency change that raises the Rust floor as an explicit compatibility decision.
+- `Cargo.lock` is committed application build state. Do not delete it to force fresh resolution; dependency updates must deliberately refresh it and pass CI with `--locked` afterward.
+- The exact `idna_adapter` and Windows `keyring` constraints are compatibility/backend decisions documented in ADR 0005 and ADR 0004; do not loosen them accidentally during routine dependency cleanup.
 - Keep native Windows CI because the primary credential backend is Windows-specific and must not rot behind `#[cfg(windows)]`.
 
 ## Current milestone
