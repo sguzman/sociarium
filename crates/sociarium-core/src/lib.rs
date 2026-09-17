@@ -107,6 +107,22 @@ pub enum NormalizedRecord {
     Post(Post),
 }
 
+impl NormalizedRecord {
+    pub fn profile_id(&self) -> &ProfileId {
+        match self {
+            Self::ProfileSnapshot(record) => &record.profile_id,
+            Self::Post(record) => &record.profile_id,
+        }
+    }
+
+    pub fn observation(&self) -> &ObservationMeta {
+        match self {
+            Self::ProfileSnapshot(record) => &record.observation,
+            Self::Post(record) => &record.observation,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -109,15 +109,12 @@ impl SocialAdapter for XAdapter {
             RawEvidence {
                 media_type: "application/json".into(),
                 bytes: me.bytes,
-                suggested_path: Some(format!(
-                    "x/{}/{acquisition_id}/authenticated-user.json",
-                    profile.id
-                )),
+                suggested_path: Some("authenticated-user.json".into()),
             },
             RawEvidence {
                 media_type: "application/json".into(),
                 bytes: posts.bytes,
-                suggested_path: Some(format!("x/{}/{acquisition_id}/posts.json", profile.id)),
+                suggested_path: Some("posts.json".into()),
             },
         ];
 

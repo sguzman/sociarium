@@ -1,8 +1,19 @@
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::collections::BTreeSet;
+use std::fs::{self, File};
+use std::io::{BufWriter, Write};
+use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use sociarium_core::NormalizedRecord;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use sociarium_adapter::SyncBatch;
+use sociarium_core::{ProfileId, SurfaceId, TrackedProfile};
 use thiserror::Error;
+
+pub const STORE_SCHEMA_VERSION: u32 = 1;
+
+static STAGING_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Debug)]
 pub struct CorpusLayout {
@@ -18,47 +29,364 @@ impl CorpusLayout {
         &self.root
     }
 
-    pub fn raw_dir(&self) -> PathBuf {
-        self.root.join("raw")
+    pub fn acquisitions_dir(&self) -> PathBuf {
+        self.root.join("acquisitions")
     }
 
-    pub fn objects_dir(&self) -> PathBuf {
-        self.root.join("objects")
+    pub fn state_dir(&self) -> PathBuf {
+        self.root.join("state")
     }
 
-    pub fn observations_dir(&self) -> PathBuf {
-        self.root.join("observations")
+    pub fn derived_dir(&self) -> PathBuf {
+        self.root.join("derived")
     }
 
-    pub fn provenance_dir(&self) -> PathBuf {
-        self.root.join("provenance")
+    pub fn indexes_dir(&self) -> PathBuf {
+        self.root.join("indexes")
     }
 
     pub fn ensure_dirs(&self) -> Result<(), StoreError> {
         for path in [
-            self.raw_dir(),
-            self.objects_dir(),
-            self.observations_dir(),
-            self.provenance_dir(),
+            self.acquisitions_dir(),
+            self.state_dir().join("profiles"),
+            self.derived_dir(),
+            self.indexes_dir(),
         ] {
             fs::create_dir_all(path)?;
         }
         Ok(())
     }
 
-    pub fn write_normalized_json(
-        &self,
-        relative_path: impl AsRef<Path>,
-        record: &NormalizedRecord,
-    ) -> Result<PathBuf, StoreError> {
-        let path = self.objects_dir().join(relative_path);
-        if let Some(parent) = path.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        let json = serde_json::to_vec_pretty(record)?;
-        fs::write(&path, json)?;
-        Ok(path)
+    fn acquisition_profile_dir(&self, profile: &TrackedProfile) -> PathBuf {
+        self.acquisitions_dir()
+            .join(encode_component(profile.surface.as_str()))
+            .join(encode_component(profile.id.as_str()))
     }
+
+    fn checkpoint_profile_dir(&self, profile: &TrackedProfile) -> PathBuf {
+        self.state_dir()
+            .join("profiles")
+            .join(encode_component(profile.id.as_str()))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct CorpusStore {
+    layout: CorpusLayout,
+}
+
+impl CorpusStore {
+    pub fn open(root: impl Into<PathBuf>) -> Result<Self, StoreError> {
+        let layout = CorpusLayout::new(root);
+        layout.ensure_dirs()?;
+        Ok(Self { layout })
+    }
+
+    pub fn layout(&self) -> &CorpusLayout {
+        &self.layout
+    }
+
+    pub fn persist_sync_batch(
+        &self,
+        profile: &TrackedProfile,
+        batch: &SyncBatch,
+    ) -> Result<PersistedBatch, StoreError> {
+        let batch_meta = validate_batch(profile, batch)?;
+        let profile_dir = self.layout.acquisition_profile_dir(profile);
+        fs::create_dir_all(&profile_dir)?;
+
+        let encoded_acquisition = encode_component(&batch_meta.acquisition_id);
+        let final_dir = profile_dir.join(&encoded_acquisition);
+        if final_dir.exists() {
+            return Err(StoreError::AcquisitionExists(
+                batch_meta.acquisition_id.clone(),
+            ));
+        }
+
+        let staging_dir = profile_dir.join(format!(
+            ".pending-{encoded_acquisition}-{}-{}",
+            std::process::id(),
+            STAGING_COUNTER.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir(&staging_dir)?;
+
+        let result = self.write_staging_batch(&staging_dir, profile, batch, batch_meta);
+        let manifest = match result {
+            Ok(manifest) => manifest,
+            Err(error) => {
+                let _ = fs::remove_dir_all(&staging_dir);
+                return Err(error);
+            }
+        };
+
+        fs::rename(&staging_dir, &final_dir)?;
+
+        let state = ProfileSyncState::from_manifest(&manifest);
+        let state_dir = self.layout.checkpoint_profile_dir(profile);
+        fs::create_dir_all(&state_dir)?;
+        let state_path = state_dir.join(format!("{encoded_acquisition}.json"));
+        write_new_json(&state_path, &state)?;
+
+        Ok(PersistedBatch {
+            acquisition_dir: final_dir,
+            state_path,
+            manifest,
+        })
+    }
+
+    pub fn profile_state(
+        &self,
+        profile: &TrackedProfile,
+    ) -> Result<Option<ProfileSyncState>, StoreError> {
+        let profile_dir = self.layout.acquisition_profile_dir(profile);
+        if !profile_dir.exists() {
+            return Ok(None);
+        }
+
+        let mut latest: Option<ProfileSyncState> = None;
+        for entry in fs::read_dir(profile_dir)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir() {
+                continue;
+            }
+            let name = entry.file_name();
+            if name.to_string_lossy().starts_with(".pending-") {
+                continue;
+            }
+
+            let manifest_path = entry.path().join("manifest.json");
+            if !manifest_path.is_file() {
+                continue;
+            }
+            let manifest: AcquisitionManifest = read_json(&manifest_path)?;
+            if manifest.profile_id != profile.id || manifest.surface != profile.surface {
+                return Err(StoreError::CorruptManifest(manifest_path));
+            }
+
+            let candidate = ProfileSyncState::from_manifest(&manifest);
+            let should_replace = latest.as_ref().is_none_or(|current| {
+                (candidate.updated_at, candidate.last_acquisition_id.as_str())
+                    > (current.updated_at, current.last_acquisition_id.as_str())
+            });
+            if should_replace {
+                latest = Some(candidate);
+            }
+        }
+
+        Ok(latest)
+    }
+
+    fn write_staging_batch(
+        &self,
+        staging_dir: &Path,
+        profile: &TrackedProfile,
+        batch: &SyncBatch,
+        batch_meta: BatchMeta,
+    ) -> Result<AcquisitionManifest, StoreError> {
+        let raw_dir = staging_dir.join("raw");
+        let normalized_dir = staging_dir.join("normalized");
+        fs::create_dir_all(&raw_dir)?;
+        fs::create_dir_all(&normalized_dir)?;
+
+        let mut raw_paths = BTreeSet::new();
+        let mut raw_files = Vec::with_capacity(batch.raw.len());
+        for (index, evidence) in batch.raw.iter().enumerate() {
+            let relative_path = evidence
+                .suggested_path
+                .as_deref()
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from(format!("raw-{index:04}.bin")));
+            validate_relative_path(&relative_path)?;
+            if !raw_paths.insert(relative_path.clone()) {
+                return Err(StoreError::DuplicateRawPath(relative_path));
+            }
+
+            let target = raw_dir.join(&relative_path);
+            if let Some(parent) = target.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(&target, &evidence.bytes)?;
+
+            raw_files.push(RawFileManifest {
+                path: portable_path(&relative_path),
+                media_type: evidence.media_type.clone(),
+                byte_len: evidence.bytes.len() as u64,
+                sha256: sha256_hex(&evidence.bytes),
+            });
+        }
+
+        let records_path = normalized_dir.join("records.jsonl");
+        let records_file = File::create(&records_path)?;
+        let mut writer = BufWriter::new(records_file);
+        for record in &batch.records {
+            serde_json::to_writer(&mut writer, record)?;
+            writer.write_all(b"\n")?;
+        }
+        writer.flush()?;
+        writer.get_ref().sync_all()?;
+
+        let manifest = AcquisitionManifest {
+            schema_version: STORE_SCHEMA_VERSION,
+            acquisition_id: batch_meta.acquisition_id,
+            profile_id: profile.id.clone(),
+            surface: profile.surface.clone(),
+            observed_at: batch_meta.observed_at,
+            record_count: batch.records.len(),
+            raw_files,
+            next_cursor: batch.next_cursor.clone(),
+        };
+        write_new_json(&staging_dir.join("manifest.json"), &manifest)?;
+        Ok(manifest)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct RawFileManifest {
+    pub path: String,
+    pub media_type: String,
+    pub byte_len: u64,
+    pub sha256: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct AcquisitionManifest {
+    pub schema_version: u32,
+    pub acquisition_id: String,
+    pub profile_id: ProfileId,
+    pub surface: SurfaceId,
+    pub observed_at: DateTime<Utc>,
+    pub record_count: usize,
+    pub raw_files: Vec<RawFileManifest>,
+    pub next_cursor: Option<String>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct ProfileSyncState {
+    pub schema_version: u32,
+    pub profile_id: ProfileId,
+    pub surface: SurfaceId,
+    pub last_acquisition_id: String,
+    pub updated_at: DateTime<Utc>,
+    pub cursor: Option<String>,
+}
+
+impl ProfileSyncState {
+    fn from_manifest(manifest: &AcquisitionManifest) -> Self {
+        Self {
+            schema_version: STORE_SCHEMA_VERSION,
+            profile_id: manifest.profile_id.clone(),
+            surface: manifest.surface.clone(),
+            last_acquisition_id: manifest.acquisition_id.clone(),
+            updated_at: manifest.observed_at,
+            cursor: manifest.next_cursor.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PersistedBatch {
+    pub acquisition_dir: PathBuf,
+    pub state_path: PathBuf,
+    pub manifest: AcquisitionManifest,
+}
+
+#[derive(Clone, Debug)]
+struct BatchMeta {
+    acquisition_id: String,
+    observed_at: DateTime<Utc>,
+}
+
+fn validate_batch(profile: &TrackedProfile, batch: &SyncBatch) -> Result<BatchMeta, StoreError> {
+    let first = batch.records.first().ok_or(StoreError::EmptyBatch)?;
+    let first_observation = first.observation();
+    if first_observation.acquisition_id.trim().is_empty() {
+        return Err(StoreError::InvalidAcquisitionId);
+    }
+
+    for record in &batch.records {
+        if record.profile_id() != &profile.id {
+            return Err(StoreError::ProfileMismatch {
+                expected: profile.id.to_string(),
+                actual: record.profile_id().to_string(),
+            });
+        }
+        let observation = record.observation();
+        if observation.surface != profile.surface {
+            return Err(StoreError::SurfaceMismatch {
+                expected: profile.surface.to_string(),
+                actual: observation.surface.to_string(),
+            });
+        }
+        if observation.acquisition_id != first_observation.acquisition_id
+            || observation.observed_at != first_observation.observed_at
+        {
+            return Err(StoreError::MixedAcquisition);
+        }
+    }
+
+    Ok(BatchMeta {
+        acquisition_id: first_observation.acquisition_id.clone(),
+        observed_at: first_observation.observed_at,
+    })
+}
+
+fn validate_relative_path(path: &Path) -> Result<(), StoreError> {
+    if path.as_os_str().is_empty() || path.is_absolute() {
+        return Err(StoreError::UnsafeRawPath(path.to_path_buf()));
+    }
+    if path
+        .components()
+        .any(|component| !matches!(component, Component::Normal(_)))
+    {
+        return Err(StoreError::UnsafeRawPath(path.to_path_buf()));
+    }
+    Ok(())
+}
+
+fn portable_path(path: &Path) -> String {
+    path.components()
+        .filter_map(|component| match component {
+            Component::Normal(value) => Some(value.to_string_lossy()),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+fn encode_component(value: &str) -> String {
+    const HEX: &[u8; 16] = b"0123456789ABCDEF";
+    let mut encoded = String::with_capacity(value.len());
+    for byte in value.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_') {
+            encoded.push(char::from(byte));
+        } else {
+            encoded.push('%');
+            encoded.push(char::from(HEX[(byte >> 4) as usize]));
+            encoded.push(char::from(HEX[(byte & 0x0f) as usize]));
+        }
+    }
+    encoded
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    format!("{:x}", Sha256::digest(bytes))
+}
+
+fn write_new_json(path: &Path, value: &impl Serialize) -> Result<(), StoreError> {
+    if path.exists() {
+        return Err(StoreError::PathExists(path.to_path_buf()));
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let bytes = serde_json::to_vec_pretty(value)?;
+    fs::write(path, bytes)?;
+    Ok(())
+}
+
+fn read_json<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<T, StoreError> {
+    let bytes = fs::read(path)?;
+    Ok(serde_json::from_slice(&bytes)?)
 }
 
 #[derive(Debug, Error)]
@@ -67,16 +395,144 @@ pub enum StoreError {
     Io(#[from] std::io::Error),
     #[error("serialization error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("sync batch contains no normalized records")]
+    EmptyBatch,
+    #[error("sync batch acquisition id cannot be blank")]
+    InvalidAcquisitionId,
+    #[error("sync batch mixes records from different acquisitions")]
+    MixedAcquisition,
+    #[error("sync batch profile mismatch: expected {expected}, got {actual}")]
+    ProfileMismatch { expected: String, actual: String },
+    #[error("sync batch surface mismatch: expected {expected}, got {actual}")]
+    SurfaceMismatch { expected: String, actual: String },
+    #[error("unsafe raw evidence path: {0}", .0.display())]
+    UnsafeRawPath(PathBuf),
+    #[error("duplicate raw evidence path: {0}", .0.display())]
+    DuplicateRawPath(PathBuf),
+    #[error("acquisition already exists: {0}")]
+    AcquisitionExists(String),
+    #[error("path already exists: {0}", .0.display())]
+    PathExists(PathBuf),
+    #[error("acquisition manifest does not match its profile directory: {0}", .0.display())]
+    CorruptManifest(PathBuf),
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
+
+    use chrono::{TimeZone, Utc};
+    use sociarium_adapter::RawEvidence;
+    use sociarium_core::{
+        NormalizedRecord, ObservationMeta, ProfileOwnership, ProfileSnapshot, RemoteId,
+    };
+
     use super::*;
 
+    struct TempCorpus(PathBuf);
+
+    impl TempCorpus {
+        fn new(name: &str) -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "sociarium-{name}-{}-{}",
+                std::process::id(),
+                STAGING_COUNTER.fetch_add(1, Ordering::Relaxed)
+            ));
+            let _ = fs::remove_dir_all(&root);
+            Self(root)
+        }
+    }
+
+    impl Drop for TempCorpus {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn profile() -> TrackedProfile {
+        TrackedProfile {
+            id: ProfileId::new("x-main").unwrap(),
+            surface: SurfaceId::new("x").unwrap(),
+            remote_id: Some(RemoteId::new("6679733").unwrap()),
+            handle: Some("sguzman".to_owned()),
+            ownership: ProfileOwnership::SelfOwned,
+            enabled: true,
+        }
+    }
+
+    fn batch(raw_path: &str) -> SyncBatch {
+        let observation = ObservationMeta {
+            surface: SurfaceId::new("x").unwrap(),
+            observed_at: Utc.with_ymd_and_hms(2026, 9, 17, 14, 0, 0).unwrap(),
+            acquisition_id: "acq-001".to_owned(),
+            schema_version: 1,
+        };
+        let record = NormalizedRecord::ProfileSnapshot(ProfileSnapshot {
+            profile_id: ProfileId::new("x-main").unwrap(),
+            remote_id: RemoteId::new("6679733").unwrap(),
+            handle: Some("sguzman".to_owned()),
+            display_name: Some("Salvador".to_owned()),
+            bio: None,
+            avatar_url: None,
+            metrics: BTreeMap::new(),
+            observation,
+            extensions: BTreeMap::new(),
+        });
+
+        SyncBatch {
+            records: vec![record],
+            raw: vec![RawEvidence {
+                media_type: "application/json".to_owned(),
+                bytes: br#"{"data":{"id":"6679733"}}"#.to_vec(),
+                suggested_path: Some(raw_path.to_owned()),
+            }],
+            next_cursor: Some("NEXT-PAGE".to_owned()),
+        }
+    }
+
     #[test]
-    fn layer_directories_are_distinct() {
-        let layout = CorpusLayout::new("corpus");
-        assert_ne!(layout.raw_dir(), layout.objects_dir());
-        assert_ne!(layout.objects_dir(), layout.provenance_dir());
+    fn persists_one_atomic_acquisition_bundle_and_recovers_cursor_from_manifest() {
+        let temp = TempCorpus::new("persist");
+        let store = CorpusStore::open(&temp.0).unwrap();
+        let profile = profile();
+        let persisted = store
+            .persist_sync_batch(&profile, &batch("api/me.json"))
+            .unwrap();
+
+        assert!(persisted.acquisition_dir.join("manifest.json").is_file());
+        assert!(
+            persisted
+                .acquisition_dir
+                .join("normalized/records.jsonl")
+                .is_file()
+        );
+        assert!(persisted.acquisition_dir.join("raw/api/me.json").is_file());
+        assert!(persisted.state_path.is_file());
+        assert_eq!(persisted.manifest.raw_files[0].byte_len, 25);
+
+        fs::remove_file(&persisted.state_path).unwrap();
+        let recovered = store.profile_state(&profile).unwrap().unwrap();
+        assert_eq!(recovered.cursor.as_deref(), Some("NEXT-PAGE"));
+        assert_eq!(recovered.last_acquisition_id, "acq-001");
+    }
+
+    #[test]
+    fn rejects_raw_path_traversal_and_cleans_staging_directory() {
+        let temp = TempCorpus::new("traversal");
+        let store = CorpusStore::open(&temp.0).unwrap();
+        let profile = profile();
+
+        let error = store
+            .persist_sync_batch(&profile, &batch("../escape.json"))
+            .unwrap_err();
+        assert!(matches!(error, StoreError::UnsafeRawPath(_)));
+        assert!(!temp.0.join("escape.json").exists());
+
+        let acquisition_parent = store.layout().acquisition_profile_dir(&profile);
+        let leftovers = fs::read_dir(acquisition_parent)
+            .unwrap()
+            .filter_map(Result::ok)
+            .count();
+        assert_eq!(leftovers, 0);
     }
 }
