@@ -16,11 +16,14 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 4. A remote profile is not automatically a real-world person. Cross-profile identity links must be explicit and provenance-preserving.
 5. Preserve raw, normalized, and derived layers as distinct concepts.
 6. Durable corpus files are authoritative historical records. Indexes/caches must be rebuildable.
-7. Surface integrations are Rust-native. Do not add `xurl`, XMCP, Node, Go, Python, or another platform CLI as a runtime dependency to avoid implementing an adapter properly.
-8. Credentials are operational secret state outside the corpus. Persistent credential keys are profile-scoped; do not introduce a global surface credential singleton or store bearer material in TOML/corpus files.
-9. MCP is an external projection/interface. Core behavior must not depend on MCP.
-10. Remote writes are a separate capability boundary from local reads and should be conspicuous and auditable.
-11. Do not silently edit user goals/prompts into a different task. If implementation pressure reveals a design conflict, record the conflict and surface it.
+7. The software source repository and the operator's corpus repository are separate authority domains. Do not default real corpus data into the public source checkout.
+8. Surface integrations are Rust-native. Do not add `xurl`, XMCP, Node, Go, Python, or another platform CLI as a runtime dependency to avoid implementing an adapter properly.
+9. Credentials are operational secret state outside the corpus. Persistent credential keys are profile-scoped; do not introduce a global surface credential singleton or store bearer material in TOML/corpus files.
+10. Private/authorized social data is not necessarily credential material. A corpus can be secret-free while still inappropriate to publish publicly.
+11. Git may version/transport corpus state, but it is not the persistence API. GitHub is never corpus authority.
+12. MCP is an external projection/interface. Core behavior must not depend on MCP.
+13. Remote writes are a separate capability boundary from local reads and should be conspicuous and auditable.
+14. Do not silently edit user goals/prompts into a different task. If implementation pressure reveals a design conflict, record the conflict and surface it.
 
 ## Engineering rules
 
@@ -47,7 +50,7 @@ M0 is one vertical slice:
 
 `configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
 
-The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. M0 is **not repository-complete** while issues #2–#5 remain open.
+The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. M0 is **not repository-complete** while issues #2–#6 remain open.
 
 ### Current implementation queue
 
@@ -56,7 +59,8 @@ Implement bounded issues from the repository rather than asking the human princi
 1. **#5 — X timeline wire-contract blocker.** Correct `post.fields` to the documented `tweet.fields`, request `referenced_tweets`, and make M0 repost semantics explicit without flattening unsupported repost relationships.
 2. **#4 — safe X remote failure diagnostics.** Stop emitting arbitrary raw OAuth/API failure bodies while preserving useful structured status/category information.
 3. **#3 — resilient OAuth loopback callback.** Add bounded waiting and tolerate unrelated local requests without weakening state/error validation.
-4. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus boundaries into a no-network readiness check safe to paste into issue evidence.
+4. **#6 — separate Git-safe corpus initialization.** Establish the operator corpus as a dedicated durable directory/repository, protect disposable/pending state from accidental Git history, and keep software source separate from social data.
+5. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus boundaries into a no-network readiness check safe to paste into issue evidence.
 
 After each bounded issue:
 
@@ -65,6 +69,6 @@ After each bounded issue:
 - close the issue only when its acceptance criteria are actually satisfied;
 - do not begin the live X smoke test while a pre-live issue remains unresolved.
 
-After #2–#5 are closed and CI is green, the remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account. Do not close M0 until native login, credential persistence, real sync, durable checkpointing, index rebuild, local query, and the second incremental sync succeed against real X data.
+After #2–#6 are closed and CI is green, the remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account, using the dedicated corpus boundary. Do not close M0 until native login, credential persistence, real sync, durable checkpointing, index rebuild, local query, and the second incremental sync succeed against real X data.
 
 Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, multiple adapters, deep thread acquisition, or full repost/reblog ontology. The architecture must permit those later without implementing them now.
