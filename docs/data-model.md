@@ -64,9 +64,21 @@ A conflicted profile is a corpus-integrity error. Sociarium must not silently ch
 
 For an unbound X self-owned profile, the configured handle may act as an enrollment guard for the first authorized `/users/me` result. Once the resulting stable remote ID is durably established, future authorization/sync attempts are checked against that remote ID rather than requiring the handle to remain unchanged.
 
-The canonical binding should be recoverable from ordinary durable corpus evidence (for example `ProfileSnapshot` history) or another explicit canonical file. It must not exist only in a disposable SQLite/search index.
+M0 reconstructs this binding directly from completed durable `ProfileSnapshot` history through `CorpusStore::profile_binding`. The result is explicitly one of:
 
-Issue #7 tracks the M0 implementation/enforcement of this rule.
+```text
+Unbound
+Bound(RemoteId)
+Conflicted(RemoteId[])
+```
+
+Before synchronization, CLI composition resolves that durable state. A bound ID is injected into the working `TrackedProfile` when configuration omitted it, so the surface adapter can reject a credential/account mismatch before fetching Posts. If configuration explicitly names a different remote ID than durable evidence, synchronization fails locally.
+
+For the first unbound X enrollment, a configured handle is used only as a case-insensitive guard against authorizing the wrong account. Once the first `ProfileSnapshot.remote_id` is durable, the stable ID becomes authoritative and future handle changes remain ordinary mutable observations.
+
+The persistence boundary independently enforces the same invariant before publishing a new acquisition. A conflicting `ProfileSnapshot.remote_id`, a batch containing multiple profile IDs, or already-conflicted durable history is rejected even if an adapter or composition layer is buggy.
+
+The canonical binding therefore remains reconstructable from ordinary acquisition evidence. It is not stored only in SQLite, a mutable singleton state file, Git history, or credential metadata.
 
 ## Shared semantics versus extensions
 
