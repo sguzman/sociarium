@@ -12,6 +12,11 @@ use sociarium_core::{ProfileId, SurfaceId, TrackedProfile};
 use thiserror::Error;
 
 pub const STORE_SCHEMA_VERSION: u32 = 1;
+pub const CORPUS_REPOSITORY_SCHEMA_VERSION: u32 = 1;
+pub const CORPUS_MARKER_FILE: &str = "sociarium-corpus.json";
+pub const CORPUS_GITIGNORE_RULES: &[&str] = &["/indexes/", "/derived/", "**/.pending-*/"];
+
+const CORPUS_KIND: &str = "sociarium-corpus";
 
 static STAGING_COUNTER: AtomicU64 = AtomicU64::new(0);
 
@@ -45,6 +50,10 @@ impl CorpusLayout {
         self.root.join("indexes")
     }
 
+    pub fn marker_path(&self) -> PathBuf {
+        self.root.join(CORPUS_MARKER_FILE)
+    }
+
     pub fn ensure_dirs(&self) -> Result<(), StoreError> {
         for path in [
             self.acquisitions_dir(),
@@ -70,6 +79,12 @@ impl CorpusLayout {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct CorpusRepositoryMetadata {
+    pub schema_version: u32,
+    pub kind: String,
+}
+
 #[derive(Clone, Debug)]
 pub struct CorpusStore {
     layout: CorpusLayout,
@@ -80,6 +95,45 @@ impl CorpusStore {
         let layout = CorpusLayout::new(root);
         layout.ensure_dirs()?;
         Ok(Self { layout })
+    }
+
+    pub fn initialize(root: impl Into<PathBuf>) -> Result<Self, StoreError> {
+        let layout = CorpusLayout::new(root);
+        let root = layout.root();
+
+        if root.exists() && !root.is_dir() {
+            return Err(StoreError::CorpusRootNotDirectory(root.to_path_buf()));
+        }
+        fs::create_dir_all(root)?;
+
+        if layout.marker_path().exists() {
+            validate_corpus_marker(&layout)?;
+        } else {
+            validate_initialization_target(root)?;
+            let metadata = CorpusRepositoryMetadata {
+                schema_version: CORPUS_REPOSITORY_SCHEMA_VERSION,
+                kind: CORPUS_KIND.to_owned(),
+            };
+            write_new_json(&layout.marker_path(), &metadata)?;
+        }
+
+        layout.ensure_dirs()?;
+        ensure_corpus_gitignore(root)?;
+        Ok(Self { layout })
+    }
+
+    pub fn open_initialized(root: impl Into<PathBuf>) -> Result<Self, StoreError> {
+        let layout = CorpusLayout::new(root);
+        validate_corpus_marker(&layout)?;
+        layout.ensure_dirs()?;
+        Ok(Self { layout })
+    }
+
+    pub fn validate_initialized(
+        root: impl Into<PathBuf>,
+    ) -> Result<CorpusRepositoryMetadata, StoreError> {
+        let layout = CorpusLayout::new(root);
+        validate_corpus_marker(&layout)
     }
 
     pub fn layout(&self) -> &CorpusLayout {
@@ -296,6 +350,72 @@ struct BatchMeta {
     observed_at: DateTime<Utc>,
 }
 
+fn validate_corpus_marker(
+    layout: &CorpusLayout,
+) -> Result<CorpusRepositoryMetadata, StoreError> {
+    let root = layout.root();
+    if !root.is_dir() {
+        return Err(StoreError::CorpusNotInitialized(root.to_path_buf()));
+    }
+    let marker = layout.marker_path();
+    if !marker.is_file() {
+        return Err(StoreError::CorpusNotInitialized(root.to_path_buf()));
+    }
+    let metadata: CorpusRepositoryMetadata = read_json(&marker)?;
+    if metadata.kind != CORPUS_KIND {
+        return Err(StoreError::InvalidCorpusKind {
+            path: marker,
+            found: metadata.kind,
+        });
+    }
+    if metadata.schema_version != CORPUS_REPOSITORY_SCHEMA_VERSION {
+        return Err(StoreError::UnsupportedCorpusRepositorySchema {
+            path: marker,
+            found: metadata.schema_version,
+            expected: CORPUS_REPOSITORY_SCHEMA_VERSION,
+        });
+    }
+    Ok(metadata)
+}
+
+fn validate_initialization_target(root: &Path) -> Result<(), StoreError> {
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        if name == ".git" || name == ".gitignore" {
+            continue;
+        }
+        return Err(StoreError::CorpusInitTargetNotEmpty(root.to_path_buf()));
+    }
+    Ok(())
+}
+
+fn ensure_corpus_gitignore(root: &Path) -> Result<(), StoreError> {
+    let path = root.join(".gitignore");
+    let mut content = if path.exists() {
+        fs::read_to_string(&path)?
+    } else {
+        String::new()
+    };
+
+    let mut changed = false;
+    for rule in CORPUS_GITIGNORE_RULES {
+        if !content.lines().any(|line| line.trim() == *rule) {
+            if !content.is_empty() && !content.ends_with('\n') {
+                content.push('\n');
+            }
+            content.push_str(rule);
+            content.push('\n');
+            changed = true;
+        }
+    }
+
+    if changed || !path.exists() {
+        fs::write(path, content)?;
+    }
+    Ok(())
+}
+
 fn validate_batch(profile: &TrackedProfile, batch: &SyncBatch) -> Result<BatchMeta, StoreError> {
     let first = batch.records.first().ok_or(StoreError::EmptyBatch)?;
     let first_observation = first.observation();
@@ -395,6 +515,23 @@ pub enum StoreError {
     Io(#[from] std::io::Error),
     #[error("serialization error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("corpus root is not a directory: {}", .0.display())]
+    CorpusRootNotDirectory(PathBuf),
+    #[error("directory is not an initialized Sociarium corpus: {}", .0.display())]
+    CorpusNotInitialized(PathBuf),
+    #[error("refusing to initialize non-empty corpus target: {}", .0.display())]
+    CorpusInitTargetNotEmpty(PathBuf),
+    #[error("invalid Sociarium corpus kind in {}: {found}", path.display())]
+    InvalidCorpusKind { path: PathBuf, found: String },
+    #[error(
+        "unsupported Sociarium corpus repository schema {found} in {}; expected {expected}",
+        path.display()
+    )]
+    UnsupportedCorpusRepositorySchema {
+        path: PathBuf,
+        found: u32,
+        expected: u32,
+    },
     #[error("sync batch contains no normalized records")]
     EmptyBatch,
     #[error("sync batch acquisition id cannot be blank")]
@@ -488,6 +625,70 @@ mod tests {
             }],
             next_cursor: Some("NEXT-PAGE".to_owned()),
         }
+    }
+
+    #[test]
+    fn initializes_git_safe_corpus_layout_and_marker() {
+        let temp = TempCorpus::new("initialize");
+        let store = CorpusStore::initialize(&temp.0).unwrap();
+
+        assert!(store.layout().marker_path().is_file());
+        assert!(store.layout().acquisitions_dir().is_dir());
+        assert!(store.layout().state_dir().join("profiles").is_dir());
+        assert!(store.layout().derived_dir().is_dir());
+        assert!(store.layout().indexes_dir().is_dir());
+
+        let metadata = CorpusStore::validate_initialized(&temp.0).unwrap();
+        assert_eq!(metadata.schema_version, CORPUS_REPOSITORY_SCHEMA_VERSION);
+        assert_eq!(metadata.kind, CORPUS_KIND);
+
+        let gitignore = fs::read_to_string(temp.0.join(".gitignore")).unwrap();
+        for rule in CORPUS_GITIGNORE_RULES {
+            assert!(gitignore.lines().any(|line| line.trim() == *rule));
+        }
+        assert!(!gitignore.contains("acquisitions/"));
+        assert!(!gitignore.contains("state/"));
+    }
+
+    #[test]
+    fn corpus_initialization_is_idempotent_and_preserves_custom_gitignore() {
+        let temp = TempCorpus::new("initialize-idempotent");
+        fs::create_dir_all(&temp.0).unwrap();
+        fs::create_dir(temp.0.join(".git")).unwrap();
+        fs::write(temp.0.join(".gitignore"), "# operator rule\n*.bak\n").unwrap();
+
+        CorpusStore::initialize(&temp.0).unwrap();
+        CorpusStore::initialize(&temp.0).unwrap();
+
+        let gitignore = fs::read_to_string(temp.0.join(".gitignore")).unwrap();
+        assert!(gitignore.contains("# operator rule"));
+        assert!(gitignore.contains("*.bak"));
+        for rule in CORPUS_GITIGNORE_RULES {
+            assert_eq!(
+                gitignore.lines().filter(|line| line.trim() == *rule).count(),
+                1
+            );
+        }
+    }
+
+    #[test]
+    fn refuses_to_initialize_unrelated_nonempty_directory() {
+        let temp = TempCorpus::new("initialize-nonempty");
+        fs::create_dir_all(&temp.0).unwrap();
+        fs::write(temp.0.join("README.md"), "not a corpus").unwrap();
+
+        let error = CorpusStore::initialize(&temp.0).unwrap_err();
+        assert!(matches!(error, StoreError::CorpusInitTargetNotEmpty(_)));
+        assert!(!temp.0.join(CORPUS_MARKER_FILE).exists());
+    }
+
+    #[test]
+    fn open_initialized_rejects_unmarked_directory() {
+        let temp = TempCorpus::new("open-uninitialized");
+        CorpusStore::open(&temp.0).unwrap();
+
+        let error = CorpusStore::open_initialized(&temp.0).unwrap_err();
+        assert!(matches!(error, StoreError::CorpusNotInitialized(_)));
     }
 
     #[test]
