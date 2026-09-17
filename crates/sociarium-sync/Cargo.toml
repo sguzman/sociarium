@@ -1,0 +1,18 @@
+[package]
+name = "sociarium-sync"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+sociarium-adapter = { path = "../sociarium-adapter" }
+sociarium-core = { path = "../sociarium-core" }
+sociarium-store = { path = "../sociarium-store" }
+thiserror.workspace = true
+
+[dev-dependencies]
+async-trait.workspace = true
+chrono.workspace = true
+tokio.workspace = true
