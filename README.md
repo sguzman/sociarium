@@ -22,6 +22,8 @@ The first vertical slice is now implementation-complete in the repository:
 
 The remaining M0 validation gate is a live smoke test against a real registered X Developer App and authorized account. Unit/fixture coverage and CI validate the implementation without requiring live credentials, but they do not substitute for one real end-to-end authorization and synchronization run.
 
+Build resolution is also now reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
+
 MCP comes after the corpus and query boundaries are stable. It is a projection of Sociarium, not Sociarium's internal API.
 
 ## Architectural invariants
@@ -75,15 +77,15 @@ Bearer credentials do not belong in this file.
 Validate configuration and inspect profiles:
 
 ```text
-cargo run -p sociarium-cli -- --config sociarium.toml config check
-cargo run -p sociarium-cli -- --config sociarium.toml profiles list
+cargo run -p sociarium-cli --locked -- --config sociarium.toml config check
+cargo run -p sociarium-cli --locked -- --config sociarium.toml profiles list
 ```
 
 On Windows, authorize the profile once through the native loopback OAuth flow:
 
 ```text
-cargo run -p sociarium-cli -- --config sociarium.toml auth login x-main
-cargo run -p sociarium-cli -- --config sociarium.toml auth status x-main
+cargo run -p sociarium-cli --locked -- --config sociarium.toml auth login x-main
+cargo run -p sociarium-cli --locked -- --config sociarium.toml auth status x-main
 ```
 
 The CLI prints the X authorization URL, validates the loopback callback, exchanges the authorization code, and stores the resulting token envelope in Windows Credential Manager. Subsequent syncs load and refresh that profile's credential automatically.
@@ -91,9 +93,9 @@ The CLI prints the X authorization URL, validates the loopback callback, exchang
 Then synchronize and query the local corpus:
 
 ```text
-cargo run -p sociarium-cli -- --config sociarium.toml --corpus corpus sync x-main
-cargo run -p sociarium-cli -- --corpus corpus posts list --profile x-main
-cargo run -p sociarium-cli -- --corpus corpus posts search sociarium --profile x-main
+cargo run -p sociarium-cli --locked -- --config sociarium.toml --corpus corpus sync x-main
+cargo run -p sociarium-cli --locked -- --corpus corpus posts list --profile x-main
+cargo run -p sociarium-cli --locked -- --corpus corpus posts search sociarium --profile x-main
 ```
 
 `SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
@@ -116,15 +118,17 @@ Start with:
 
 ## Development
 
-Current CI enforces formatting, strict clippy, workspace tests, native Windows compilation/tests, and the declared Rust 1.85 minimum supported version.
+Current CI enforces formatting, strict clippy, workspace tests, native Windows compilation/tests, and the declared Rust 1.85 minimum supported version against the committed lockfile.
 
 ```text
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo +1.85.0 check --workspace --all-targets
-cargo run -p sociarium-cli -- doctor
+cargo clippy --workspace --all-targets --locked -- -D warnings
+cargo test --workspace --locked
+cargo +1.85.0 check --workspace --all-targets --locked
+cargo run -p sociarium-cli --locked -- doctor
 ```
+
+Dependency updates should deliberately refresh `Cargo.lock` and then pass the full matrix. See ADR 0005 for the MSRV and dependency-resolution policy.
 
 Live X synchronization requires a registered X Developer App plus user authorization. Unit tests and normalization fixtures do not require live X credentials.
 
