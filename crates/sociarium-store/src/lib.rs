@@ -350,9 +350,7 @@ struct BatchMeta {
     observed_at: DateTime<Utc>,
 }
 
-fn validate_corpus_marker(
-    layout: &CorpusLayout,
-) -> Result<CorpusRepositoryMetadata, StoreError> {
+fn validate_corpus_marker(layout: &CorpusLayout) -> Result<CorpusRepositoryMetadata, StoreError> {
     let root = layout.root();
     if !root.is_dir() {
         return Err(StoreError::CorpusNotInitialized(root.to_path_buf()));
@@ -665,7 +663,10 @@ mod tests {
         assert!(gitignore.contains("*.bak"));
         for rule in CORPUS_GITIGNORE_RULES {
             assert_eq!(
-                gitignore.lines().filter(|line| line.trim() == *rule).count(),
+                gitignore
+                    .lines()
+                    .filter(|line| line.trim() == *rule)
+                    .count(),
                 1
             );
         }
