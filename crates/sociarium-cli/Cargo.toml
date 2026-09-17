@@ -16,6 +16,7 @@ clap.workspace = true
 sociarium-adapter = { path = "../sociarium-adapter" }
 sociarium-adapter-x = { path = "../sociarium-adapter-x" }
 sociarium-config = { path = "../sociarium-config" }
+sociarium-core = { path = "../sociarium-core" }
 sociarium-credentials = { path = "../sociarium-credentials" }
 sociarium-search = { path = "../sociarium-search" }
 sociarium-store = { path = "../sociarium-store" }
