@@ -265,7 +265,8 @@ mod tests {
 
     #[test]
     fn authorization_url_uses_pkce_and_minimal_read_scopes() {
-        let config = XOAuthConfig::new("client", "http://127.0.0.1:49152/oauth/x/callback").unwrap();
+        let config =
+            XOAuthConfig::new("client", "http://127.0.0.1:49152/oauth/x/callback").unwrap();
         let session = XOAuthSession::from_parts(
             &config,
             "known-state".to_owned(),
@@ -279,8 +280,14 @@ mod tests {
             .into_owned()
             .collect::<std::collections::BTreeMap<_, _>>();
 
-        assert_eq!(params.get("response_type").map(String::as_str), Some("code"));
-        assert_eq!(params.get("code_challenge_method").map(String::as_str), Some("S256"));
+        assert_eq!(
+            params.get("response_type").map(String::as_str),
+            Some("code")
+        );
+        assert_eq!(
+            params.get("code_challenge_method").map(String::as_str),
+            Some("S256")
+        );
         assert!(params["scope"].contains("tweet.read"));
         assert!(params["scope"].contains("users.read"));
         assert!(params["scope"].contains("offline.access"));
@@ -289,7 +296,8 @@ mod tests {
 
     #[test]
     fn debug_output_redacts_transient_secrets() {
-        let config = XOAuthConfig::new("client", "http://127.0.0.1:49152/oauth/x/callback").unwrap();
+        let config =
+            XOAuthConfig::new("client", "http://127.0.0.1:49152/oauth/x/callback").unwrap();
         let session = config.begin().unwrap();
         let rendered = format!("{session:?}");
         assert!(rendered.contains("[redacted]"));
