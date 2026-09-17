@@ -32,6 +32,7 @@ offline.access
 ```
 
 `offline.access` is required for a refresh token so later syncs can refresh without another interactive authorization.
+- For the first unbound `x-main` enrollment, configuration contains either the intended stable `remote_id` or the intended X handle. The handle is only an enrollment guard; the remote numeric ID observed from `/users/me` becomes the durable identity after the first successful acquisition.
 
 ## 1. Initialize/select the dedicated corpus
 
@@ -151,7 +152,10 @@ cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS
 Expected:
 
 - authenticated-user lookup succeeds;
-- the configured remote ID is checked if one is configured;
+- if a stable remote ID was already configured or reconstructed from corpus history, the authenticated X user must have that exact ID before Posts are fetched;
+- if the profile is genuinely unbound, its configured handle must match the authenticated username case-insensitively before first enrollment is accepted;
+- the first successful unbound acquisition durably establishes the stable remote ID through its `ProfileSnapshot`;
+- a later handle rename for that same remote ID does not create a new local identity or invalidate the binding;
 - the X user-post request uses the current remote wire contract, including `tweet.fields=created_at,referenced_tweets,note_tweet` or an equivalent field set preserving those semantics;
 - the chosen M0 repost policy is applied deliberately rather than flattening an unsupported repost relation;
 - when X returns `note_tweet.text`, normalized `Post.text` uses that full authored text instead of a shorter/truncated `text` representation;
@@ -196,9 +200,11 @@ Run sync again without deleting the corpus:
 cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS_ROOT> sync x-main
 ```
 
-Expected: Sociarium starts from prior durable state. X receives the completed high-water `since_id` rather than treating the previous pagination token as the incremental checkpoint. Already durable history remains intact.
+Expected: Sociarium starts from prior durable state. Before contacting X for Posts, the CLI reconstructs the stable remote-profile binding from completed `ProfileSnapshot` evidence and passes that ID to the X adapter. X receives the completed high-water `since_id` rather than treating the previous pagination token as the incremental checkpoint. Already durable history remains intact.
 
-If there are no new posts, a successful no-new-data traversal is still a valid result; it must not erase the previous checkpoint or corpus.
+A credential swap or later login to a different X account must therefore fail the stable-ID check rather than append that account beneath `x-main`. Deterministic M0 tests cover this negative path; the live smoke run does not require the operator to maintain or deliberately authorize a second X account merely to prove it.
+
+If there are no new posts, a successful no-new-data traversal is still a valid result; it must not erase the previous checkpoint, corpus, or profile binding.
 
 ## 8. Verify rebuildability
 
@@ -251,6 +257,8 @@ M0 can close when the repository-side pre-live issues are resolved and the real 
 - native S256 PKCE login succeeds;
 - Windows Credential Manager retains the profile-scoped credential;
 - first X sync persists real raw + normalized data from the retrievable remote window into the dedicated corpus;
+- the local profile has one reconstructable stable remote-ID binding and later syncs preserve it even if the handle changes;
+- deterministic tests prove a conflicting credential/remote account cannot be committed under that local profile;
 - supported reply/quote references are preserved when present;
 - full long-form authored text is normalized from `note_tweet.text` when present (deterministic fixture evidence is acceptable if the live retrievable window contains no such Post);
 - durable checkpoint is present;
