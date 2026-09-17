@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use sociarium_adapter::{AdapterError, Capability, RawEvidence, SocialAdapter, SyncBatch};
 use sociarium_core::{ObservationMeta, ProfileOwnership, SurfaceId, TrackedProfile};
 
-pub use auth::{XOAuthConfig, XOAuthError, XOAuthSession, XTokenSet};
+pub use auth::{XOAuthConfig, XOAuthError, XOAuthSession, XStoredTokens, XTokenSet};
 pub use client::{XApiClient, XApiError};
 
 const X_CURSOR_VERSION: u32 = 1;
