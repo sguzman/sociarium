@@ -2,6 +2,7 @@ mod auth;
 mod client;
 mod models;
 mod normalize;
+mod remote_error;
 
 use std::cmp::Ordering;
 use std::collections::BTreeSet;
