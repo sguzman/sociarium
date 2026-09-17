@@ -20,7 +20,7 @@ The first vertical slice is structurally implemented:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #2–#6 track that work. The confirmed live blocker is #5: the current user-timeline request uses `post.fields` where X documents `tweet.fields`, and it does not yet request the relationship field the normalizer already understands. The other issues harden remote-error safety, loopback handling, dedicated corpus initialization, and a final profile-aware local preflight.
+A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #2–#6 track that work. The confirmed live blocker is #5: the current user-timeline request uses `post.fields` where X documents `tweet.fields`, does not request `referenced_tweets`, and does not request/use `note_tweet`; without that fix, live reply/quote relationships can be absent and long Posts can normalize from a truncated `text` representation instead of the full authored `note_tweet.text`. The other issues harden remote-error safety, loopback handling, dedicated corpus initialization, and a final profile-aware local preflight.
 
 Preferred implementation order is **#5 -> #4 -> #3 -> #6 -> #2**.
 
@@ -43,6 +43,7 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 - **Source/corpus separation:** the Sociarium software checkout and the operator's durable social corpus are separate authority domains.
 - **Private data is not the same as a credential:** a secret-free corpus can still contain authorized/private observations and should not be assumed safe to publish.
 - **Git is history/transport:** Git may version a corpus; it is not the persistence/query API and GitHub is not corpus authority.
+- **Best available normalized value:** portable fields such as `Post.text` should use the best complete value the acquired source exposes, not a known truncated preview.
 - **Conspicuous writes:** reading/querying local data is broad; remote mutation is a separate capability boundary.
 - **Inspectable repository:** the corpus should remain understandable even if the Sociarium executable no longer runs.
 
@@ -153,7 +154,7 @@ cargo run -p sociarium-cli --locked -- doctor
 
 Dependency updates should deliberately refresh `Cargo.lock` and then pass the full matrix. See ADR 0005 for the MSRV and dependency-resolution policy.
 
-Live X synchronization requires a registered X Developer App plus user authorization. Unit tests and normalization fixtures do not require live X credentials.
+Live X synchronization requires a registered X Developer App plus user authorization and whatever current API credits/entitlement X requires. Unit tests and normalization fixtures do not require live X credentials or paid API access.
 
 ## License
 
