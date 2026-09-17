@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use chrono::{DateTime, Utc};
-use rusqlite::{params, Connection, OpenFlags};
+use rusqlite::{Connection, OpenFlags, params};
 use sociarium_core::{NormalizedRecord, Post};
 use sociarium_store::{AcquisitionManifest, CorpusLayout, STORE_SCHEMA_VERSION};
 use thiserror::Error;
@@ -49,12 +49,10 @@ impl SearchIndex {
         if pending.exists() {
             fs::remove_file(&pending)?;
         }
-
         if let Err(error) = build_index(&pending, &scan.posts) {
             let _ = fs::remove_file(&pending);
             return Err(error);
         }
-
         if self.path.exists() {
             fs::remove_file(&self.path)?;
         }
@@ -73,7 +71,6 @@ impl SearchIndex {
         profile_id: Option<&str>,
         limit: usize,
     ) -> Result<Vec<PostHit>, SearchError> {
-        let fts_query = literal_fts_query(query)?;
         let connection = self.open_read_only()?;
         let mut statement = connection.prepare(
             "SELECT p.object_id, p.profile_id, p.surface, p.remote_id, p.created_at, \
@@ -85,10 +82,11 @@ impl SearchIndex {
              LIMIT ?3",
         )?;
         let rows = statement.query_map(
-            params![fts_query, profile_id, bounded_limit(limit)],
+            params![literal_fts_query(query)?, profile_id, bounded_limit(limit)],
             row_to_hit,
         )?;
-        rows.collect::<Result<Vec<_>, _>>().map_err(SearchError::from)
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(SearchError::from)
     }
 
     pub fn list_posts(
@@ -106,7 +104,8 @@ impl SearchIndex {
              LIMIT ?2",
         )?;
         let rows = statement.query_map(params![profile_id, bounded_limit(limit)], row_to_hit)?;
-        rows.collect::<Result<Vec<_>, _>>().map_err(SearchError::from)
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(SearchError::from)
     }
 
     fn open_read_only(&self) -> Result<Connection, SearchError> {
@@ -210,17 +209,14 @@ fn build_index(path: &Path, posts: &[Post]) -> Result<(), SearchError> {
         let mut insert_fts = transaction.prepare(
             "INSERT INTO posts_fts (object_id, profile_id, surface, text) VALUES (?1, ?2, ?3, ?4)",
         )?;
-
         for post in posts {
-            let created_at = post.created_at.as_ref().map(DateTime::to_rfc3339);
-            let observed_at = post.observation.observed_at.to_rfc3339();
             insert_post.execute(params![
                 post.id.as_str(),
                 post.profile_id.as_str(),
                 post.observation.surface.as_str(),
                 post.remote_id.as_str(),
-                created_at,
-                observed_at,
+                post.created_at.as_ref().map(DateTime::to_rfc3339),
+                post.observation.observed_at.to_rfc3339(),
                 post.text.as_str(),
                 post.canonical_url.as_deref(),
             ])?;
@@ -260,7 +256,6 @@ fn scan_corpus(corpus_root: &Path) -> Result<CorpusScan, SearchError> {
                 if name.starts_with(".pending-") {
                     continue;
                 }
-
                 let manifest_path = acquisition_dir.join("manifest.json");
                 if !manifest_path.is_file() {
                     return Err(SearchError::MissingManifest(acquisition_dir));
@@ -277,10 +272,8 @@ fn scan_corpus(corpus_root: &Path) -> Result<CorpusScan, SearchError> {
 
                 acquisitions_scanned += 1;
                 let records_path = acquisition_dir.join("normalized").join("records.jsonl");
-                let file = File::open(&records_path)?;
-                let reader = BufReader::new(file);
+                let reader = BufReader::new(File::open(&records_path)?);
                 let mut acquisition_records = 0;
-
                 for line in reader.lines() {
                     let line = line?;
                     if line.trim().is_empty() {
@@ -296,15 +289,13 @@ fn scan_corpus(corpus_root: &Path) -> Result<CorpusScan, SearchError> {
                         let observed_at = post.observation.observed_at;
                         let acquisition_id = post.observation.acquisition_id.clone();
                         let replace = latest_posts.get(&key).is_none_or(|current| {
-                            (observed_at, acquisition_id.as_str())
-                                > (current.0, current.1.as_str())
+                            (observed_at, acquisition_id.as_str()) > (current.0, current.1.as_str())
                         });
                         if replace {
                             latest_posts.insert(key, (observed_at, acquisition_id, post));
                         }
                     }
                 }
-
                 if acquisition_records != manifest.record_count {
                     return Err(SearchError::RecordCountMismatch {
                         path: records_path,
@@ -423,9 +414,7 @@ mod tests {
     }
 
     fn write_post_acquisition(root: &Path, acquisition_id: &str, hour: u32, text: &str) {
-        let observed_at = Utc
-            .with_ymd_and_hms(2026, 9, 17, hour, 0, 0)
-            .unwrap();
+        let observed_at = Utc.with_ymd_and_hms(2026, 9, 17, hour, 0, 0).unwrap();
         let observation = ObservationMeta {
             surface: SurfaceId::new("x").unwrap(),
             observed_at,
@@ -445,7 +434,6 @@ mod tests {
             extensions: BTreeMap::new(),
         };
         let record = NormalizedRecord::Post(post);
-
         let acquisition_dir = root
             .join("acquisitions")
             .join("x")
@@ -457,7 +445,6 @@ mod tests {
             format!("{}\n", serde_json::to_string(&record).unwrap()),
         )
         .unwrap();
-
         let manifest = AcquisitionManifest {
             schema_version: STORE_SCHEMA_VERSION,
             acquisition_id: acquisition_id.to_owned(),
@@ -479,12 +466,7 @@ mod tests {
     fn rebuild_uses_latest_observation_and_is_recoverable_after_deletion() {
         let corpus = TempCorpus::new("rebuild");
         write_post_acquisition(&corpus.0, "acq-old", 13, "older wording");
-        write_post_acquisition(
-            &corpus.0,
-            "acq-new",
-            14,
-            "newer wording about sociarium",
-        );
+        write_post_acquisition(&corpus.0, "acq-new", 14, "newer wording about sociarium");
 
         let index = SearchIndex::for_corpus(&corpus.0);
         let stats = index.rebuild().unwrap();
@@ -499,7 +481,6 @@ mod tests {
             index.search_posts("sociarium", None, 20),
             Err(SearchError::MissingIndex(_))
         ));
-
         index.rebuild().unwrap();
         let posts = index.list_posts(Some("x-main"), 20).unwrap();
         assert_eq!(posts.len(), 1);
@@ -512,6 +493,9 @@ mod tests {
             literal_fts_query("fallen/village").unwrap(),
             "\"fallen/village\""
         );
-        assert!(matches!(literal_fts_query("   "), Err(SearchError::EmptyQuery)));
+        assert!(matches!(
+            literal_fts_query("   "),
+            Err(SearchError::EmptyQuery)
+        ));
     }
 }

@@ -174,11 +174,7 @@ fn index_rebuild(corpus: &Path) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn posts_list(
-    corpus: &Path,
-    profile: Option<&str>,
-    limit: usize,
-) -> Result<(), Box<dyn Error>> {
+fn posts_list(corpus: &Path, profile: Option<&str>, limit: usize) -> Result<(), Box<dyn Error>> {
     let index = SearchIndex::for_corpus(corpus);
     for hit in index.list_posts(profile, limit)? {
         print_hit(&hit);
