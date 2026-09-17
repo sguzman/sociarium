@@ -405,15 +405,15 @@ pub enum StoreError {
     ProfileMismatch { expected: String, actual: String },
     #[error("sync batch surface mismatch: expected {expected}, got {actual}")]
     SurfaceMismatch { expected: String, actual: String },
-    #[error("unsafe raw evidence path: {0}", .0.display())]
+    #[error("unsafe raw evidence path: {}", .0.display())]
     UnsafeRawPath(PathBuf),
-    #[error("duplicate raw evidence path: {0}", .0.display())]
+    #[error("duplicate raw evidence path: {}", .0.display())]
     DuplicateRawPath(PathBuf),
     #[error("acquisition already exists: {0}")]
     AcquisitionExists(String),
-    #[error("path already exists: {0}", .0.display())]
+    #[error("path already exists: {}", .0.display())]
     PathExists(PathBuf),
-    #[error("acquisition manifest does not match its profile directory: {0}", .0.display())]
+    #[error("acquisition manifest does not match its profile directory: {}", .0.display())]
     CorruptManifest(PathBuf),
 }
 
