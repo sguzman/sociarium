@@ -81,6 +81,6 @@ M0 must also preserve the best complete authored text the X payload exposes. X u
 
 This requirement does **not** force M0 to normalize every rich-text entity or article feature. It is a fidelity rule for the already-existing portable `Post.text` field. Successful raw evidence remains available for later richer interpretation.
 
-Issue #5 tracks the pre-live wire/data-fidelity correction: use the remote `tweet.fields` parameter, request `created_at`, `referenced_tweets`, and `note_tweet`, preserve full text and supported reply/quote references, and make the M0 repost policy explicit.
+M0 now uses the remote `tweet.fields` parameter with `created_at,referenced_tweets,note_tweet`. It preserves supported reply/quote references, prefers full `note_tweet.text` when present, and explicitly sends `exclude=retweets` so reposts are not flattened into ordinary authored Posts before a portable repost relation exists.
 
 X wire names remain X wire names. The remote API uses parameter/field names such as `tweet.fields`, `referenced_tweets`, and `note_tweet`; the fact that Sociarium's portable ontology calls the object a `Post` does not justify renaming remote protocol parameters.
