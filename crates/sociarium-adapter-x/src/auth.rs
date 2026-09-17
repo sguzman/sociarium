@@ -10,6 +10,8 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 use url::Url;
 
+use crate::remote_error::safe_remote_category;
+
 const AUTHORIZE_URL: &str = "https://x.com/i/oauth2/authorize";
 const TOKEN_URL: &str = "https://api.x.com/2/oauth2/token";
 const X_STORED_TOKEN_SCHEMA_VERSION: u32 = 1;
@@ -99,13 +101,10 @@ impl XOAuthConfig {
         let bytes = response.bytes().await?;
 
         if !status.is_success() {
-            let body = String::from_utf8_lossy(&bytes)
-                .chars()
-                .take(512)
-                .collect::<String>();
+            let status = status.as_u16();
             return Err(XOAuthError::Remote {
-                status: status.as_u16(),
-                body,
+                status,
+                category: safe_remote_category(status, &bytes),
             });
         }
 
@@ -373,8 +372,11 @@ pub enum XOAuthError {
     Transport(#[from] reqwest::Error),
     #[error("X OAuth response JSON error: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("X OAuth endpoint returned HTTP {status}: {body}")]
-    Remote { status: u16, body: String },
+    #[error("X OAuth endpoint returned HTTP {status} ({category})")]
+    Remote {
+        status: u16,
+        category: &'static str,
+    },
 }
 
 #[cfg(test)]
@@ -420,6 +422,28 @@ mod tests {
         let rendered = format!("{session:?}");
         assert!(rendered.contains("[redacted]"));
         assert!(!rendered.contains(&session.code_verifier));
+    }
+
+    #[test]
+    fn remote_oauth_error_display_is_safe_by_construction() {
+        let body = br#"{
+            "error":"invalid_grant",
+            "error_description":"access-secret refresh-secret code-secret code_verifier-secret"
+        }"#;
+        let error = XOAuthError::Remote {
+            status: 400,
+            category: safe_remote_category(400, body),
+        };
+        let rendered = error.to_string();
+
+        assert_eq!(
+            rendered,
+            "X OAuth endpoint returned HTTP 400 (invalid_grant)"
+        );
+        assert!(!rendered.contains("access-secret"));
+        assert!(!rendered.contains("refresh-secret"));
+        assert!(!rendered.contains("code-secret"));
+        assert!(!rendered.contains("code_verifier-secret"));
     }
 
     #[test]
