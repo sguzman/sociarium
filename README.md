@@ -8,7 +8,9 @@ Sociarium is a Rust-native, user-sovereign social-data substrate that synchroniz
 
 Sociarium is in M0. The first concrete integration target is X, but X does not define the core model.
 
-The generic profile configuration and the native X OAuth/API acquisition boundary now exist. The next integration step is to persist complete sync batches into the durable corpus and make incremental sync state recoverable.
+The generic profile configuration, native X OAuth/API boundary, durable acquisition bundles, crash-recoverable sync state, rebuildable SQLite/FTS search projection, and profile-scoped CLI sync/query path now exist.
+
+The remaining major M0 integration gap is credential UX: the OAuth2/PKCE primitives exist, but the CLI still needs a loopback callback flow plus profile-scoped OS credential-store persistence and refresh handling. Until that lands, live X sync accepts an already-authorized access token only through the temporary `SOCIARIUM_X_ACCESS_TOKEN` process environment bridge.
 
 The M0 vertical slice remains intentionally narrow:
 
@@ -18,7 +20,8 @@ The M0 vertical slice remains intentionally narrow:
 4. add an X adapter that talks directly to X from Rust;
 5. sync one configured X profile's posts into the local corpus;
 6. rebuild a disposable local index from that corpus;
-7. query the result from the CLI.
+7. query the result from the CLI;
+8. finish native credential persistence and OAuth authorization UX.
 
 MCP comes after the corpus and query boundaries are stable. It is a projection of Sociarium, not Sociarium's internal API.
 
@@ -39,12 +42,14 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 
 - `sociarium-core` — surface-independent social ontology and identifiers.
 - `sociarium-adapter` — adapter traits, capabilities, sync batches, and adapter errors.
-- `sociarium-adapter-x` — first surface adapter; native X OAuth2/PKCE, HTTP acquisition, and normalization live here.
+- `sociarium-adapter-x` — first surface adapter; native X OAuth2/PKCE, HTTP acquisition, cursor semantics, and normalization live here.
 - `sociarium-config` — non-secret, surface-agnostic corpus/profile configuration.
 - `sociarium-store` — durable repository layout and persistence boundary.
+- `sociarium-sync` — generic profile-scoped sync orchestration and crash-resume rules.
+- `sociarium-search` — disposable SQLite/FTS projection rebuilt from durable acquisitions.
 - `sociarium-cli` — human-facing CLI orchestration.
 
-Planned later: indexing/search, MCP, media acquisition, additional adapters, and explicit cross-profile identity resolution.
+Planned later: persistent credential-store integration, MCP, media acquisition, additional adapters, and explicit cross-profile identity resolution.
 
 ## Configuration
 
@@ -55,6 +60,18 @@ cargo run -p sociarium-cli -- --config sociarium.toml config check
 cargo run -p sociarium-cli -- --config sociarium.toml profiles list
 ```
 
+For the temporary M0 X credential bridge:
+
+```text
+SOCIARIUM_X_ACCESS_TOKEN=<authorized-user-token> \
+  cargo run -p sociarium-cli -- --config sociarium.toml --corpus corpus sync x-main
+
+cargo run -p sociarium-cli -- --corpus corpus posts list --profile x-main
+cargo run -p sociarium-cli -- --corpus corpus posts search sociarium --profile x-main
+```
+
+On PowerShell, set the environment variable using normal PowerShell environment syntax rather than the POSIX inline form above.
+
 ## Documentation
 
 Start with:
@@ -63,8 +80,10 @@ Start with:
 - [`docs/data-model.md`](docs/data-model.md)
 - [`docs/adapters.md`](docs/adapters.md)
 - [`docs/configuration.md`](docs/configuration.md)
+- [`docs/synchronization.md`](docs/synchronization.md)
 - [`docs/security-and-credentials.md`](docs/security-and-credentials.md)
 - [`docs/repository-format.md`](docs/repository-format.md)
+- [`docs/search-index.md`](docs/search-index.md)
 - [`docs/roadmap.md`](docs/roadmap.md)
 - [`docs/decisions/`](docs/decisions/) for architectural decision records
 - [`AGENTS.md`](AGENTS.md) for the implementation contract
@@ -78,7 +97,7 @@ cargo test --workspace
 cargo run -p sociarium-cli -- doctor
 ```
 
-Live X synchronization still requires a registered X Developer App plus user authorization. Unit tests and normalization fixtures do not require live X credentials.
+Live X synchronization requires a registered X Developer App plus user authorization. Unit tests and normalization fixtures do not require live X credentials.
 
 ## License
 
