@@ -1,5 +1,11 @@
 schema_version = 1
 
+# Surface settings belong to the adapter, not to profiles or the core ontology.
+# These values are not secrets. OAuth bearer/refresh tokens never belong here.
+[surfaces.x]
+client_id = "replace-with-x-developer-app-client-id"
+redirect_uri = "http://127.0.0.1:49152/oauth/x/callback"
+
 # Profiles are synchronization scopes, not inferred real-world people.
 [[profiles]]
 id = "x-main"
@@ -9,6 +15,9 @@ ownership = "self_owned"
 enabled = true
 
 # Additional surfaces/profiles use the same generic shape.
+# [surfaces.reddit]
+# client_id = "example"
+#
 # [[profiles]]
 # id = "reddit-main"
 # surface = "reddit"
