@@ -8,20 +8,19 @@ Sociarium is a Rust-native, user-sovereign social-data substrate that synchroniz
 
 Sociarium is in M0. The first concrete integration target is X, but X does not define the core model.
 
-The generic profile configuration, native X OAuth/API boundary, durable acquisition bundles, crash-recoverable sync state, rebuildable SQLite/FTS search projection, and profile-scoped CLI sync/query path now exist.
+The first vertical slice is now implementation-complete in the repository:
 
-The remaining major M0 integration gap is credential UX: the OAuth2/PKCE primitives exist, but the CLI still needs a loopback callback flow plus profile-scoped OS credential-store persistence and refresh handling. Until that lands, live X sync accepts an already-authorized access token only through the temporary `SOCIARIUM_X_ACCESS_TOKEN` process environment bridge.
+1. generic profile and surface configuration;
+2. native X OAuth2 Authorization Code + PKCE;
+3. profile-scoped Windows Credential Manager persistence;
+4. automatic X token refresh;
+5. direct Rust X API acquisition;
+6. crash-resumable and incremental profile synchronization;
+7. durable raw + normalized acquisition bundles;
+8. rebuildable SQLite/FTS search projection;
+9. CLI authorization, sync, list, and search paths.
 
-The M0 vertical slice remains intentionally narrow:
-
-1. define a generic social-domain model;
-2. define the adapter contract;
-3. establish the durable repository format;
-4. add an X adapter that talks directly to X from Rust;
-5. sync one configured X profile's posts into the local corpus;
-6. rebuild a disposable local index from that corpus;
-7. query the result from the CLI;
-8. finish native credential persistence and OAuth authorization UX.
+The remaining M0 validation gate is a live smoke test against a real registered X Developer App and authorized account. Unit/fixture coverage and CI validate the implementation without requiring live credentials, but they do not substitute for one real end-to-end authorization and synchronization run.
 
 MCP comes after the corpus and query boundaries are stable. It is a projection of Sociarium, not Sociarium's internal API.
 
@@ -42,35 +41,62 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 
 - `sociarium-core` — surface-independent social ontology and identifiers.
 - `sociarium-adapter` — adapter traits, capabilities, sync batches, and adapter errors.
-- `sociarium-adapter-x` — first surface adapter; native X OAuth2/PKCE, HTTP acquisition, cursor semantics, and normalization live here.
-- `sociarium-config` — non-secret, surface-agnostic corpus/profile configuration.
+- `sociarium-adapter-x` — first surface adapter; native X OAuth2/PKCE, HTTP acquisition, cursor semantics, token envelopes, and normalization live here.
+- `sociarium-config` — non-secret corpus/profile configuration plus generic per-surface settings.
+- `sociarium-credentials` — profile-scoped credential-store abstraction with an in-memory test backend and Windows Credential Manager backend.
 - `sociarium-store` — durable repository layout and persistence boundary.
 - `sociarium-sync` — generic profile-scoped sync orchestration and crash-resume rules.
 - `sociarium-search` — disposable SQLite/FTS projection rebuilt from durable acquisitions.
-- `sociarium-cli` — human-facing CLI orchestration.
+- `sociarium-cli` — human-facing auth, sync, index, and query orchestration.
 
-Planned later: persistent credential-store integration, MCP, media acquisition, additional adapters, and explicit cross-profile identity resolution.
+Planned later: MCP, media acquisition, additional adapters, broader X corpus objects, and explicit cross-profile identity resolution.
 
 ## Configuration
 
-Copy [`sociarium.example.toml`](sociarium.example.toml) and adjust the profile set for a corpus. The file describes synchronization scopes only; OAuth tokens and other secrets do not belong in it.
+Copy [`sociarium.example.toml`](sociarium.example.toml), register an X Developer App, and set its non-secret client configuration:
+
+```toml
+schema_version = 1
+
+[surfaces.x]
+client_id = "replace-with-your-x-app-client-id"
+redirect_uri = "http://127.0.0.1:49152/oauth/x/callback"
+
+[[profiles]]
+id = "x-main"
+surface = "x"
+handle = "sguzman"
+ownership = "self_owned"
+enabled = true
+```
+
+Bearer credentials do not belong in this file.
+
+Validate configuration and inspect profiles:
 
 ```text
 cargo run -p sociarium-cli -- --config sociarium.toml config check
 cargo run -p sociarium-cli -- --config sociarium.toml profiles list
 ```
 
-For the temporary M0 X credential bridge:
+On Windows, authorize the profile once through the native loopback OAuth flow:
 
 ```text
-SOCIARIUM_X_ACCESS_TOKEN=<authorized-user-token> \
-  cargo run -p sociarium-cli -- --config sociarium.toml --corpus corpus sync x-main
+cargo run -p sociarium-cli -- --config sociarium.toml auth login x-main
+cargo run -p sociarium-cli -- --config sociarium.toml auth status x-main
+```
 
+The CLI prints the X authorization URL, validates the loopback callback, exchanges the authorization code, and stores the resulting token envelope in Windows Credential Manager. Subsequent syncs load and refresh that profile's credential automatically.
+
+Then synchronize and query the local corpus:
+
+```text
+cargo run -p sociarium-cli -- --config sociarium.toml --corpus corpus sync x-main
 cargo run -p sociarium-cli -- --corpus corpus posts list --profile x-main
 cargo run -p sociarium-cli -- --corpus corpus posts search sociarium --profile x-main
 ```
 
-On PowerShell, set the environment variable using normal PowerShell environment syntax rather than the POSIX inline form above.
+`SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
 
 ## Documentation
 
@@ -90,10 +116,13 @@ Start with:
 
 ## Development
 
+Current CI enforces formatting, strict clippy, workspace tests, native Windows compilation/tests, and the declared Rust 1.85 minimum supported version.
+
 ```text
-cargo fmt --check
+cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
+cargo +1.85.0 check --workspace --all-targets
 cargo run -p sociarium-cli -- doctor
 ```
 
