@@ -557,8 +557,8 @@ impl OAuthCallbackListener {
         session: &XOAuthSession,
     ) -> Result<CallbackOutcome, Box<dyn Error>> {
         let mut request_line = Vec::with_capacity(512);
-        let mut reader = BufReader::new(stream.try_clone()?)
-            .take((MAX_OAUTH_REQUEST_LINE_BYTES + 1) as u64);
+        let mut reader =
+            BufReader::new(stream.try_clone()?).take((MAX_OAUTH_REQUEST_LINE_BYTES + 1) as u64);
 
         match reader.read_until(b'\n', &mut request_line) {
             Ok(0) => return Ok(CallbackOutcome::Ignored),
@@ -751,13 +751,10 @@ mod tests {
     use super::*;
 
     fn test_session() -> XOAuthSession {
-        XOAuthConfig::new(
-            "test-client",
-            "http://127.0.0.1:49152/oauth/x/callback",
-        )
-        .unwrap()
-        .begin()
-        .unwrap()
+        XOAuthConfig::new("test-client", "http://127.0.0.1:49152/oauth/x/callback")
+            .unwrap()
+            .begin()
+            .unwrap()
     }
 
     fn test_listener() -> OAuthCallbackListener {
