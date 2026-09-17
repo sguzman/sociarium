@@ -2,7 +2,7 @@
 
 This runbook is the final M0 validation gate. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
 
-> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issues #2–#6 remain open. Issue #5 is a confirmed X wire-contract blocker in the current timeline request, and #6 must establish the dedicated corpus boundary before real account data is written. This runbook describes the intended final procedure after those repository-side fixes are integrated and CI is green.
+> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issues #2–#6 remain open. Issue #5 is a confirmed X wire/data-fidelity blocker in the current timeline request, and #6 must establish the dedicated corpus boundary before real account data is written. This runbook describes the intended final procedure after those repository-side fixes are integrated and CI is green.
 
 Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw failed OAuth/API response bodies, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
 
@@ -15,6 +15,7 @@ Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw fail
 - Rust/Cargo can build the workspace using the committed `Cargo.lock`.
 - A separate operator-owned corpus directory/repository has been initialized through the #6 corpus boundary; do not use a real-data `corpus/` child inside the public Sociarium source checkout.
 - An X Developer App exists with OAuth 2.0 enabled.
+- The X developer project/account has whatever **current API credits, billing state, and endpoint entitlement** X requires for the user-post reads exercised by the smoke test. Do not encode a dollar price into this runbook; X commercial terms are external and mutable.
 - Use an X **Native App** / public-client shape for Sociarium. The local application does not require or persist an X client secret.
 - The app's callback URL exactly matches the configured loopback redirect, for example:
 
@@ -145,8 +146,9 @@ Expected:
 
 - authenticated-user lookup succeeds;
 - the configured remote ID is checked if one is configured;
-- the X user-post request uses the current remote wire contract (`tweet.fields`, including the relationship fields required by M0's normalized semantics);
+- the X user-post request uses the current remote wire contract, including `tweet.fields=created_at,referenced_tweets,note_tweet` or an equivalent field set preserving those semantics;
 - the chosen M0 repost policy is applied deliberately rather than flattening an unsupported repost relation;
+- when X returns `note_tweet.text`, normalized `Post.text` uses that full authored text instead of a shorter/truncated `text` representation;
 - one or more acquisition pages are persisted under the dedicated corpus, not the software checkout;
 - each successful acquisition contains raw evidence and normalized records;
 - a durable X checkpoint is stored;
@@ -157,7 +159,7 @@ The first traversal bootstraps the historical window X currently exposes for the
 
 Record only non-secret terminal output and resulting corpus paths as smoke-test evidence. Remote failure diagnostics should be the sanitized/structured form established by issue #4, not pasted raw response bodies.
 
-## 6. Verify local query behavior
+## 6. Verify local query behavior and fidelity
 
 List recent posts:
 
@@ -173,7 +175,12 @@ cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts search YOUR_
 
 Expected: results are served from the local index and contain the normalized post identity/text/URL information without contacting X.
 
-If the acquired sample includes a reply or quote Post, inspect at least one normalized acquisition to confirm the requested remote relationship field survives into `reply_to` or `quote_of` where applicable.
+Where the account history provides suitable examples, verify both:
+
+- a reply or quote Post retains `reply_to` or `quote_of` in normalized acquisition data;
+- a Post longer than 280 characters is locally searchable/listable with its **full** authored text, matching `note_tweet.text` from preserved raw evidence rather than only the shorter `text` field.
+
+If the smoke-test account simply has no suitable live example in the retrievable window, the fixture/unit coverage from issue #5 remains the deterministic acceptance evidence for that shape; do not manufacture or publish a Post solely to satisfy this read-only M0 test.
 
 ## 7. Verify incremental checkpoint behavior
 
@@ -221,12 +228,13 @@ Classify a failure before changing architecture:
 - **developer-app failure:** OAuth2 disabled, wrong app type, callback mismatch, or missing permitted scope;
 - **authorization failure:** user denies access, state mismatch, expired authorization code, or token exchange rejection;
 - **credential-store failure:** Windows credential backend cannot save/load/delete the envelope;
-- **API entitlement/rate failure:** X accepts authentication but rejects the requested endpoint because of current API access/rate policy;
+- **API billing/credit failure:** X accepts the request path/auth context but returns a payment/credit condition such as HTTP 402; verify current Developer Console billing/credits before changing Sociarium architecture;
+- **API entitlement/rate failure:** X accepts authentication but rejects the requested endpoint because of current access policy or rate limits;
 - **adapter/wire-contract failure:** X response shape, endpoint, query parameter, or field behavior no longer matches the adapter;
 - **persistence failure:** acquisition data or cursor cannot be durably written;
 - **index/query failure:** corpus persists correctly but projection rebuild/query fails.
 
-Do not bypass a failure by moving tokens into configuration/corpus files, writing real data into the public source repo, or changing architecture to hide an X contract error. Fix the failing boundary.
+Do not bypass a failure by moving tokens into configuration/corpus files, writing real data into the public source repo, or changing architecture to hide an X contract/billing error. Fix or satisfy the failing boundary.
 
 ## M0 completion evidence
 
@@ -238,6 +246,7 @@ M0 can close when the repository-side pre-live issues are resolved and the real 
 - Windows Credential Manager retains the profile-scoped credential;
 - first X sync persists real raw + normalized data from the retrievable remote window into the dedicated corpus;
 - supported reply/quote references are preserved when present;
+- full long-form authored text is normalized from `note_tweet.text` when present (deterministic fixture evidence is acceptable if the live retrievable window contains no such Post);
 - durable checkpoint is present;
 - second sync starts from prior state;
 - local index rebuild succeeds;
