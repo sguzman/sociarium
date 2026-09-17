@@ -6,7 +6,7 @@ Sociarium deliberately separates durable social data from credentials that grant
 
 The corpus may contain public or authorized observations acquired from a surface. It must not contain the bearer material used to acquire them.
 
-Never write these into the Git-tracked corpus:
+Never write these into the Git-tracked corpus or configuration:
 
 - OAuth access tokens;
 - OAuth refresh tokens;
@@ -27,6 +27,14 @@ Credential storage follows these rules:
 5. diagnostics report credential state without printing credential values.
 
 The generic boundary lives in `sociarium-credentials`. `MemoryCredentialStore` provides deterministic tests. `NativeCredentialStore` provides the host-native persistence implementation where supported.
+
+## Local configuration is not a credential store
+
+`sociarium.toml` contains non-secret operational configuration such as surface Client IDs, callback URIs, profile ids, handles, and tracking choices. Non-secret does not mean that every operator necessarily wants those choices published.
+
+The repository-root `sociarium.toml` is therefore ignored by default, while `sociarium.example.toml` remains tracked as the public schema/example. This is a locality/privacy default only: ignored configuration must still never contain bearer credentials or client secrets.
+
+A deployment that deliberately versions configuration may use another explicitly tracked filename and select it with `--config`, while preserving the same no-secrets rule.
 
 ## Windows Credential Manager
 
