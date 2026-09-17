@@ -20,9 +20,9 @@ The first vertical slice is structurally implemented:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issue #5 is now resolved: the X user-post request uses the documented `tweet.fields`, requests `referenced_tweets` and `note_tweet`, normalizes full `note_tweet.text` when present, and explicitly excludes retweets until a portable repost relation exists. Issues #4 and #5 are now resolved. Remaining issues #2–#3 and #6–#7 cover loopback handling, dedicated corpus initialization, stable remote-profile binding, and the final profile-aware local preflight.
+A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issue #5 is now resolved: the X user-post request uses the documented `tweet.fields`, requests `referenced_tweets` and `note_tweet`, normalizes full `note_tweet.text` when present, and explicitly excludes retweets until a portable repost relation exists. Issues #3–#5 are now resolved. Remaining issues #2 and #6–#7 cover dedicated corpus initialization, stable remote-profile binding, and the final profile-aware local preflight.
 
-Preferred implementation order is now **#3 -> #6 -> #7 -> #2**.
+Preferred implementation order is now **#6 -> #7 -> #2**.
 
 **Do not treat the live X smoke test as the next step until the remaining pre-live issues are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
 
