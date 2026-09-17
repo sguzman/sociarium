@@ -829,8 +829,16 @@ fn print_hit(hit: &PostHit) {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeMap;
     use std::net::{SocketAddr, TcpStream};
     use std::thread;
+
+    use chrono::TimeZone;
+    use sociarium_adapter::SyncBatch;
+    use sociarium_core::{
+        NormalizedRecord, ObservationMeta, ProfileId, ProfileOwnership, ProfileSnapshot, RemoteId,
+        SurfaceId,
+    };
 
     use super::*;
 
@@ -851,6 +859,93 @@ mod tests {
         assert!(!config_text.contains("access_token"));
         assert!(!config_text.contains("refresh_token"));
         assert!(!config_text.contains("client_secret"));
+
+        fs::remove_dir_all(path).unwrap();
+    }
+
+    fn binding_test_profile(remote_id: Option<&str>) -> TrackedProfile {
+        TrackedProfile {
+            id: ProfileId::new("x-main").unwrap(),
+            surface: SurfaceId::new("x").unwrap(),
+            remote_id: remote_id.map(|value| RemoteId::new(value).unwrap()),
+            handle: Some("old-handle".to_owned()),
+            ownership: ProfileOwnership::SelfOwned,
+            enabled: true,
+        }
+    }
+
+    fn persist_test_binding(store: &CorpusStore, profile: &TrackedProfile, remote_id: &str) {
+        let observed_at = Utc.with_ymd_and_hms(2026, 9, 17, 20, 0, 0).unwrap();
+        let observation = ObservationMeta {
+            surface: profile.surface.clone(),
+            observed_at,
+            acquisition_id: "binding-acquisition".to_owned(),
+            schema_version: 1,
+        };
+        let snapshot = ProfileSnapshot {
+            profile_id: profile.id.clone(),
+            remote_id: RemoteId::new(remote_id).unwrap(),
+            handle: Some("bound-handle".to_owned()),
+            display_name: None,
+            bio: None,
+            avatar_url: None,
+            metrics: BTreeMap::new(),
+            observation,
+            extensions: BTreeMap::new(),
+        };
+        store
+            .persist_sync_batch(
+                profile,
+                &SyncBatch {
+                    records: vec![NormalizedRecord::ProfileSnapshot(snapshot)],
+                    raw: Vec::new(),
+                    next_cursor: None,
+                },
+            )
+            .unwrap();
+    }
+
+    #[test]
+    fn durable_binding_is_injected_when_config_omits_remote_id() {
+        let path = std::env::temp_dir().join(format!(
+            "sociarium-cli-binding-inject-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&path);
+        let store = CorpusStore::initialize(&path).unwrap();
+        let configured = binding_test_profile(None);
+        persist_test_binding(&store, &configured, "6679733");
+
+        let resolved = profile_with_durable_binding(&configured, &store).unwrap();
+
+        assert_eq!(
+            resolved.remote_id.as_ref().map(RemoteId::as_str),
+            Some("6679733")
+        );
+        assert_eq!(resolved.handle.as_deref(), Some("old-handle"));
+
+        fs::remove_dir_all(path).unwrap();
+    }
+
+    #[test]
+    fn configured_remote_id_conflicting_with_durable_binding_is_rejected() {
+        let path = std::env::temp_dir().join(format!(
+            "sociarium-cli-binding-conflict-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&path);
+        let store = CorpusStore::initialize(&path).unwrap();
+        let unbound = binding_test_profile(None);
+        persist_test_binding(&store, &unbound, "6679733");
+        let configured = binding_test_profile(Some("999999"));
+
+        let error = profile_with_durable_binding(&configured, &store)
+            .unwrap_err()
+            .to_string();
+
+        assert!(error.contains("conflicts with durable binding"));
+        assert!(error.contains("6679733"));
+        assert!(error.contains("999999"));
 
         fs::remove_dir_all(path).unwrap();
     }
