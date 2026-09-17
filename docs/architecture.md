@@ -114,9 +114,13 @@ Future MCP/agent crates should depend on corpus/query abstractions rather than b
 
 ## Toolchain and dependency resolution
 
-Sociarium declares Rust 1.85 as its minimum supported Rust version and uses Cargo resolver 3 so dependency resolution honors that floor when selecting compatible transitive releases. CI separately verifies current stable Rust, native Windows behavior, and Rust 1.85.
+Sociarium declares Rust 1.85 as its minimum supported Rust version and uses Cargo resolver 3 so fresh dependency resolution honors that floor where upstream metadata permits it.
 
-This is part of the architecture contract: a dependency update that silently raises the executable's Rust floor is a compatibility change, not routine drift.
+Because MSRV metadata can still be inaccurate, the root `Cargo.lock` is committed as reproducible application build state. CI verifies current stable Rust, native Windows behavior, and Rust 1.85 against that exact graph with `--locked`.
+
+The X network stack also exact-pins `idna_adapter` 1.1.0. This intentionally selects its `unicode-rs` IDNA backend instead of the newer ICU4X backend whose Yoke chain failed an actual Rust 1.85 compile despite nominal compatibility metadata. The Windows credential backend similarly pins the keyring line known to respect the current MSRV.
+
+These are part of the architecture contract: dependency resolution or a dependency update that raises the executable's Rust floor is a compatibility change, not routine ambient drift. See ADR 0005.
 
 ## Non-goals
 
