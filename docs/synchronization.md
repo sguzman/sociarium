@@ -84,7 +84,7 @@ sociarium sync x-main --no-index
 
 A successful sync rebuilds the disposable search index unless `--no-index` is supplied.
 
-The real X M0 command path is currently held behind the pre-live issues tracked from #1; in particular #5 must correct the live timeline wire request before the deliberate smoke run.
+The X M0 user-post request now uses `tweet.fields=created_at,referenced_tweets,note_tweet` and `exclude=retweets`. Replies and quote Posts remain eligible and their portable relationships are normalized when X supplies them; long-form Posts prefer full `note_tweet.text`; retweets are deliberately excluded until Sociarium has a portable repost/reblog relation. The real X smoke run remains held behind the other pre-live issues tracked from #1.
 
 ## Failure rules
 
