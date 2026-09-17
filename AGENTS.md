@@ -28,7 +28,8 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 ## Engineering rules
 
 - Keep generic domain types in `sociarium-core`; keep platform payloads, token semantics, endpoint behavior, and remote wire names in their adapter crate.
-- Generic Sociarium names do not rename remote protocol parameters. For X, names such as `tweet.fields` and `referenced_tweets` remain wire-level X details even though the core type is `Post`.
+- Generic Sociarium names do not rename remote protocol parameters. For X, names such as `tweet.fields`, `referenced_tweets`, and `note_tweet` remain wire-level X details even though the core type is `Post`.
+- A portable normalized field should contain the best complete value the acquired source exposes. In particular, do not knowingly normalize a truncated X `text` preview as `Post.text` when `note_tweet.text` contains the full authored text.
 - Keep persistent secret storage behind `sociarium-credentials`; it stores opaque bytes keyed by generic profile identity and must not know surface token schemas.
 - Prefer stable typed identifiers over raw strings crossing every boundary.
 - Preserve remote stable IDs separately from mutable handles/display names.
@@ -56,7 +57,7 @@ The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit 
 
 Implement bounded issues from the repository rather than asking the human principal to relay prompts between agents. Preferred order:
 
-1. **#5 — X timeline wire-contract blocker.** Correct `post.fields` to the documented `tweet.fields`, request `referenced_tweets`, and make M0 repost semantics explicit without flattening unsupported repost relationships.
+1. **#5 — X timeline wire/data-fidelity blocker.** Correct `post.fields` to the documented `tweet.fields`, request `referenced_tweets` and `note_tweet`, normalize full `note_tweet.text` when present, and make M0 repost semantics explicit without flattening unsupported repost relationships.
 2. **#4 — safe X remote failure diagnostics.** Stop emitting arbitrary raw OAuth/API failure bodies while preserving useful structured status/category information.
 3. **#3 — resilient OAuth loopback callback.** Add bounded waiting and tolerate unrelated local requests without weakening state/error validation.
 4. **#6 — separate Git-safe corpus initialization.** Establish the operator corpus as a dedicated durable directory/repository, protect disposable/pending state from accidental Git history, and keep software source separate from social data.
@@ -71,4 +72,4 @@ After each bounded issue:
 
 After #2–#6 are closed and CI is green, the remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account, using the dedicated corpus boundary. Do not close M0 until native login, credential persistence, real sync, durable checkpointing, index rebuild, local query, and the second incremental sync succeed against real X data.
 
-Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, multiple adapters, deep thread acquisition, or full repost/reblog ontology. The architecture must permit those later without implementing them now.
+Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, multiple adapters, deep thread acquisition, full repost/reblog ontology, or general rich-text/article parsing. The architecture must permit those later without implementing them now.
