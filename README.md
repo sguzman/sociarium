@@ -20,11 +20,11 @@ The first vertical slice is structurally implemented:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #2–#6 track that work. The confirmed live blocker is #5: the current user-timeline request uses `post.fields` where X documents `tweet.fields`, does not request `referenced_tweets`, and does not request/use `note_tweet`; without that fix, live reply/quote relationships can be absent and long Posts can normalize from a truncated `text` representation instead of the full authored `note_tweet.text`. The other issues harden remote-error safety, loopback handling, dedicated corpus initialization, and a final profile-aware local preflight.
+A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issue #5 is now resolved: the X user-post request uses the documented `tweet.fields`, requests `referenced_tweets` and `note_tweet`, normalizes full `note_tweet.text` when present, and explicitly excludes retweets until a portable repost relation exists. Remaining issues #2–#4 and #6–#7 cover remote-error safety, loopback handling, dedicated corpus initialization, stable remote-profile binding, and the final profile-aware local preflight.
 
-Preferred implementation order is **#5 -> #4 -> #3 -> #6 -> #2**.
+Preferred implementation order is now **#4 -> #3 -> #6 -> #7 -> #2**.
 
-**Do not treat the live X smoke test as the next step until issues #2–#6 are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
+**Do not treat the live X smoke test as the next step until the remaining pre-live issues are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
 
 Build resolution is reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
 
@@ -119,7 +119,7 @@ cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts list --profi
 cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts search sociarium --profile x-main
 ```
 
-These live commands describe the M0 path, but the deliberate real-X smoke run is currently blocked on issues #2–#6 above.
+These live commands describe the M0 path, but the deliberate real-X smoke run remains blocked on the remaining pre-live issues above.
 
 `SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
 
