@@ -17,25 +17,32 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 5. Preserve raw, normalized, and derived layers as distinct concepts.
 6. Durable corpus files are authoritative historical records. Indexes/caches must be rebuildable.
 7. Surface integrations are Rust-native. Do not add `xurl`, XMCP, Node, Go, Python, or another platform CLI as a runtime dependency to avoid implementing an adapter properly.
-8. MCP is an external projection/interface. Core behavior must not depend on MCP.
-9. Remote writes are a separate capability boundary from local reads and should be conspicuous and auditable.
-10. Do not silently edit user goals/prompts into a different task. If implementation pressure reveals a design conflict, record the conflict and surface it.
+8. Credentials are operational secret state outside the corpus. Persistent credential keys are profile-scoped; do not introduce a global surface credential singleton or store bearer material in TOML/corpus files.
+9. MCP is an external projection/interface. Core behavior must not depend on MCP.
+10. Remote writes are a separate capability boundary from local reads and should be conspicuous and auditable.
+11. Do not silently edit user goals/prompts into a different task. If implementation pressure reveals a design conflict, record the conflict and surface it.
 
 ## Engineering rules
 
-- Keep generic domain types in `sociarium-core`; keep platform payloads and endpoint semantics in their adapter crate.
+- Keep generic domain types in `sociarium-core`; keep platform payloads, token semantics, and endpoint behavior in their adapter crate.
+- Keep persistent secret storage behind `sociarium-credentials`; it stores opaque bytes keyed by generic profile identity and must not know surface token schemas.
 - Prefer stable typed identifiers over raw strings crossing every boundary.
 - Preserve remote stable IDs separately from mutable handles/display names.
 - Avoid premature universalization: normalize shared semantics, retain surface-specific extensions when semantics do not cleanly match.
 - Every durable transformation should be explainable from provenance.
+- Persist each acquisition page before advancing its durable cursor. Pagination state and completed incremental high-water state are not interchangeable.
 - Heavy I/O, network work, indexing, and parsing must not be coupled to any future UI/render thread.
-- New architectural decisions should update docs and, when consequential, add an ADR under `docs/decisions/`.
+- New architectural decisions should update docs and, when consequential, add or amend an ADR under `docs/decisions/`.
 - A feature is not complete when code works but repository format, CLI semantics, or architectural behavior changed without documentation.
+- Rust 1.85 is the declared MSRV. Keep workspace resolver 3 enabled, preserve MSRV CI, and treat a dependency change that raises the Rust floor as an explicit compatibility decision.
+- Keep native Windows CI because the primary credential backend is Windows-specific and must not rot behind `#[cfg(windows)]`.
 
 ## Current milestone
 
 M0 is one vertical slice:
 
-`configured X profile -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
+`configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
+
+Repository implementation for M0 is complete. The remaining gate is a live Windows smoke test with a registered X Developer App and authorized account. Do not close M0 until native login, credential persistence, sync, durable checkpointing, index rebuild, and local query succeed against real X data.
 
 Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, or multiple adapters. The architecture must permit those later without implementing them now.
