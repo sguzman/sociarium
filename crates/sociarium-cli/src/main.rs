@@ -14,7 +14,7 @@ use sociarium_config::SociariumConfig;
 use sociarium_core::TrackedProfile;
 use sociarium_credentials::{CredentialKey, CredentialStore, NativeCredentialStore};
 use sociarium_search::{PostHit, SearchIndex};
-use sociarium_store::CorpusStore;
+use sociarium_store::{CorpusStore, ProfileBinding};
 use sociarium_sync::{SyncOptions, sync_profile};
 use url::Url;
 
@@ -374,14 +374,15 @@ async fn sync_one_profile(
     max_pages: usize,
 ) -> Result<(), Box<dyn Error>> {
     let config = SociariumConfig::load(config_path)?;
-    let profile = configured_profile(&config, profile_id)?;
+    let configured = configured_profile(&config, profile_id)?;
     let store = CorpusStore::open_initialized(corpus)?;
+    let profile = profile_with_durable_binding(configured, &store)?;
 
     let report = match profile.surface.as_str() {
         "x" => {
-            let access_token = x_access_token(&config, profile).await?;
+            let access_token = x_access_token(&config, &profile).await?;
             let adapter = XAdapter::authenticated(access_token)?;
-            sync_profile(&adapter, profile, &store, SyncOptions { max_pages }).await?
+            sync_profile(&adapter, &profile, &store, SyncOptions { max_pages }).await?
         }
         surface => {
             return Err(io::Error::new(
@@ -477,6 +478,48 @@ fn configured_profile<'a>(
             )
             .into()
         })
+}
+
+fn profile_with_durable_binding(
+    configured: &TrackedProfile,
+    store: &CorpusStore,
+) -> Result<TrackedProfile, Box<dyn Error>> {
+    let mut resolved = configured.clone();
+    match store.profile_binding(configured)? {
+        ProfileBinding::Unbound => {}
+        ProfileBinding::Bound(durable_remote_id) => {
+            if let Some(configured_remote_id) = &configured.remote_id {
+                if configured_remote_id != &durable_remote_id {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "configured remote profile id conflicts with durable binding for {}: configured={} durable={}",
+                            configured.id, configured_remote_id, durable_remote_id
+                        ),
+                    )
+                    .into());
+                }
+            } else {
+                resolved.remote_id = Some(durable_remote_id);
+            }
+        }
+        ProfileBinding::Conflicted(remote_ids) => {
+            let ids = remote_ids
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "durable remote profile binding is conflicted for {}: [{}]",
+                    configured.id, ids
+                ),
+            )
+            .into());
+        }
+    }
+    Ok(resolved)
 }
 
 fn oauth_credential_key(profile: &TrackedProfile) -> CredentialKey {
