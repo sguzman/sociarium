@@ -11,11 +11,14 @@ name = "sociarium"
 path = "src/main.rs"
 
 [dependencies]
+chrono.workspace = true
 clap.workspace = true
 sociarium-adapter = { path = "../sociarium-adapter" }
 sociarium-adapter-x = { path = "../sociarium-adapter-x" }
 sociarium-config = { path = "../sociarium-config" }
+sociarium-credentials = { path = "../sociarium-credentials" }
 sociarium-search = { path = "../sociarium-search" }
 sociarium-store = { path = "../sociarium-store" }
 sociarium-sync = { path = "../sociarium-sync" }
 tokio.workspace = true
+url.workspace = true
