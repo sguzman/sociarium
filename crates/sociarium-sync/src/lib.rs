@@ -57,10 +57,10 @@ pub async fn sync_profile<A: SocialAdapter>(
     let mut raw_evidence_objects = 0;
 
     for _ in 0..options.max_pages {
-        if let Some(value) = cursor.as_ref()
-            && !seen_cursors.insert(value.clone())
-        {
-            return Err(SyncError::CursorCycle(value.clone()));
+        if let Some(value) = cursor.as_ref() {
+            if !seen_cursors.insert(value.clone()) {
+                return Err(SyncError::CursorCycle(value.clone()));
+            }
         }
 
         let input_cursor = cursor.clone();
