@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 use std::fs::{self, File};
-use std::io::{BufWriter, Write};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -8,7 +8,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sociarium_adapter::SyncBatch;
-use sociarium_core::{ProfileId, SurfaceId, TrackedProfile};
+use sociarium_core::{NormalizedRecord, ProfileId, RemoteId, SurfaceId, TrackedProfile};
 use thiserror::Error;
 
 pub const STORE_SCHEMA_VERSION: u32 = 1;
@@ -85,6 +85,13 @@ pub struct CorpusRepositoryMetadata {
     pub kind: String,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ProfileBinding {
+    Unbound,
+    Bound(RemoteId),
+    Conflicted(Vec<RemoteId>),
+}
+
 #[derive(Clone, Debug)]
 pub struct CorpusStore {
     layout: CorpusLayout,
@@ -140,12 +147,74 @@ impl CorpusStore {
         &self.layout
     }
 
+    pub fn profile_binding(&self, profile: &TrackedProfile) -> Result<ProfileBinding, StoreError> {
+        let profile_dir = self.layout.acquisition_profile_dir(profile);
+        if !profile_dir.exists() {
+            return Ok(ProfileBinding::Unbound);
+        }
+
+        let mut remote_ids = BTreeSet::new();
+        for entry in fs::read_dir(profile_dir)? {
+            let entry = entry?;
+            if !entry.file_type()?.is_dir() {
+                continue;
+            }
+            let name = entry.file_name();
+            if name.to_string_lossy().starts_with(".pending-") {
+                continue;
+            }
+
+            let acquisition_dir = entry.path();
+            let manifest_path = acquisition_dir.join("manifest.json");
+            if !manifest_path.is_file() {
+                continue;
+            }
+            let manifest: AcquisitionManifest = read_json(&manifest_path)?;
+            if manifest.profile_id != profile.id || manifest.surface != profile.surface {
+                return Err(StoreError::CorruptManifest(manifest_path));
+            }
+
+            let records_path = acquisition_dir.join("normalized").join("records.jsonl");
+            let reader = BufReader::new(File::open(&records_path)?);
+            for line in reader.lines() {
+                let line = line?;
+                if line.trim().is_empty() {
+                    continue;
+                }
+                let record: NormalizedRecord = serde_json::from_str(&line)?;
+                let observation = record.observation();
+                if record.profile_id() != &profile.id
+                    || observation.surface != profile.surface
+                    || observation.acquisition_id != manifest.acquisition_id
+                    || observation.observed_at != manifest.observed_at
+                {
+                    return Err(StoreError::CorruptNormalizedRecord(records_path.clone()));
+                }
+                if let NormalizedRecord::ProfileSnapshot(snapshot) = record {
+                    remote_ids.insert(snapshot.remote_id);
+                }
+            }
+        }
+
+        Ok(match remote_ids.len() {
+            0 => ProfileBinding::Unbound,
+            1 => ProfileBinding::Bound(
+                remote_ids
+                    .into_iter()
+                    .next()
+                    .expect("one binding exists after length check"),
+            ),
+            _ => ProfileBinding::Conflicted(remote_ids.into_iter().collect()),
+        })
+    }
+
     pub fn persist_sync_batch(
         &self,
         profile: &TrackedProfile,
         batch: &SyncBatch,
     ) -> Result<PersistedBatch, StoreError> {
         let batch_meta = validate_batch(profile, batch)?;
+        self.validate_profile_binding(profile, batch)?;
         let profile_dir = self.layout.acquisition_profile_dir(profile);
         fs::create_dir_all(&profile_dir)?;
 
@@ -228,6 +297,68 @@ impl CorpusStore {
         }
 
         Ok(latest)
+    }
+
+    fn validate_profile_binding(
+        &self,
+        profile: &TrackedProfile,
+        batch: &SyncBatch,
+    ) -> Result<(), StoreError> {
+        let durable = match self.profile_binding(profile)? {
+            ProfileBinding::Unbound => None,
+            ProfileBinding::Bound(remote_id) => Some(remote_id),
+            ProfileBinding::Conflicted(remote_ids) => {
+                return Err(StoreError::ProfileBindingConflict {
+                    profile_id: profile.id.to_string(),
+                    remote_ids: remote_ids
+                        .into_iter()
+                        .map(|remote_id| remote_id.to_string())
+                        .collect(),
+                });
+            }
+        };
+
+        if let (Some(configured), Some(durable)) = (&profile.remote_id, durable.as_ref()) {
+            if configured != durable {
+                return Err(StoreError::ConfiguredRemoteIdConflict {
+                    profile_id: profile.id.to_string(),
+                    configured: configured.to_string(),
+                    durable: durable.to_string(),
+                });
+            }
+        }
+
+        let expected = profile.remote_id.as_ref().or(durable.as_ref());
+        let batch_remote_ids = batch
+            .records
+            .iter()
+            .filter_map(|record| match record {
+                NormalizedRecord::ProfileSnapshot(snapshot) => Some(snapshot.remote_id.clone()),
+                NormalizedRecord::Post(_) => None,
+            })
+            .collect::<BTreeSet<_>>();
+
+        if batch_remote_ids.len() > 1 {
+            return Err(StoreError::BatchProfileBindingConflict {
+                profile_id: profile.id.to_string(),
+                remote_ids: batch_remote_ids
+                    .into_iter()
+                    .map(|remote_id| remote_id.to_string())
+                    .collect(),
+            });
+        }
+
+        if let (Some(expected), Some(actual)) = (expected, batch_remote_ids.iter().next()) {
+            if expected != actual {
+                return Err(StoreError::ProfileRemoteIdMismatch {
+                    profile_id: profile.id.to_string(),
+                    expected: expected.to_string(),
+                    actual: actual.to_string(),
+                });
+            }
+        }
+
+        Ok(())
     }
 
     fn write_staging_batch(
@@ -550,6 +681,34 @@ pub enum StoreError {
     PathExists(PathBuf),
     #[error("acquisition manifest does not match its profile directory: {}", .0.display())]
     CorruptManifest(PathBuf),
+    #[error("normalized record does not match its acquisition/profile scope: {}", .0.display())]
+    CorruptNormalizedRecord(PathBuf),
+    #[error("durable profile binding is conflicted for {profile_id}: {remote_ids:?}")]
+    ProfileBindingConflict {
+        profile_id: String,
+        remote_ids: Vec<String>,
+    },
+    #[error("sync batch contains conflicting remote profile ids for {profile_id}: {remote_ids:?}")]
+    BatchProfileBindingConflict {
+        profile_id: String,
+        remote_ids: Vec<String>,
+    },
+    #[error(
+        "configured remote profile id conflicts with durable binding for {profile_id}: configured={configured} durable={durable}"
+    )]
+    ConfiguredRemoteIdConflict {
+        profile_id: String,
+        configured: String,
+        durable: String,
+    },
+    #[error(
+        "remote profile id mismatch for {profile_id}: expected={expected} actual={actual}"
+    )]
+    ProfileRemoteIdMismatch {
+        profile_id: String,
+        expected: String,
+        actual: String,
+    },
 }
 
 #[cfg(test)]
