@@ -6,9 +6,11 @@ Sociarium is a Rust-native, user-sovereign social-data substrate that synchroniz
 
 ## Status
 
-Sociarium is at bootstrap/M0. The first concrete integration target is X, but X does not define the core model.
+Sociarium is in M0. The first concrete integration target is X, but X does not define the core model.
 
-The M0 vertical slice is intentionally narrow:
+The generic profile configuration and the native X OAuth/API acquisition boundary now exist. The next integration step is to persist complete sync batches into the durable corpus and make incremental sync state recoverable.
+
+The M0 vertical slice remains intentionally narrow:
 
 1. define a generic social-domain model;
 2. define the adapter contract;
@@ -29,6 +31,7 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 - **Three evidence layers:** raw remote evidence, normalized corpus objects, and derived/indexed views remain distinguishable.
 - **Rebuildable indexes:** SQLite/search indexes and caches are disposable projections, never the only copy of corpus data.
 - **Direct Rust integrations:** surface adapters talk to remote APIs directly from Rust. External platform CLIs such as `xurl` are not runtime dependencies.
+- **Credential separation:** bearer credentials are operational secret state outside the Git-tracked corpus.
 - **Conspicuous writes:** reading/querying local data is broad; remote mutation is a separate capability boundary.
 - **Inspectable repository:** the corpus should remain understandable even if the Sociarium executable no longer runs.
 
@@ -36,11 +39,21 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 
 - `sociarium-core` — surface-independent social ontology and identifiers.
 - `sociarium-adapter` — adapter traits, capabilities, sync batches, and adapter errors.
-- `sociarium-adapter-x` — first surface adapter. Direct X API integration belongs here.
+- `sociarium-adapter-x` — first surface adapter; native X OAuth2/PKCE, HTTP acquisition, and normalization live here.
+- `sociarium-config` — non-secret, surface-agnostic corpus/profile configuration.
 - `sociarium-store` — durable repository layout and persistence boundary.
 - `sociarium-cli` — human-facing CLI orchestration.
 
 Planned later: indexing/search, MCP, media acquisition, additional adapters, and explicit cross-profile identity resolution.
+
+## Configuration
+
+Copy [`sociarium.example.toml`](sociarium.example.toml) and adjust the profile set for a corpus. The file describes synchronization scopes only; OAuth tokens and other secrets do not belong in it.
+
+```text
+cargo run -p sociarium-cli -- --config sociarium.toml config check
+cargo run -p sociarium-cli -- --config sociarium.toml profiles list
+```
 
 ## Documentation
 
@@ -49,6 +62,8 @@ Start with:
 - [`docs/architecture.md`](docs/architecture.md)
 - [`docs/data-model.md`](docs/data-model.md)
 - [`docs/adapters.md`](docs/adapters.md)
+- [`docs/configuration.md`](docs/configuration.md)
+- [`docs/security-and-credentials.md`](docs/security-and-credentials.md)
 - [`docs/repository-format.md`](docs/repository-format.md)
 - [`docs/roadmap.md`](docs/roadmap.md)
 - [`docs/decisions/`](docs/decisions/) for architectural decision records
@@ -63,7 +78,7 @@ cargo test --workspace
 cargo run -p sociarium-cli -- doctor
 ```
 
-No X credentials are required yet; the X adapter is a typed boundary awaiting the first authenticated sync implementation.
+Live X synchronization still requires a registered X Developer App plus user authorization. Unit tests and normalization fixtures do not require live X credentials.
 
 ## License
 

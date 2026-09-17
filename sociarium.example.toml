@@ -1,0 +1,17 @@
+schema_version = 1
+
+# Profiles are synchronization scopes, not inferred real-world people.
+[[profiles]]
+id = "x-main"
+surface = "x"
+handle = "sguzman"
+ownership = "self_owned"
+enabled = true
+
+# Additional surfaces/profiles use the same generic shape.
+# [[profiles]]
+# id = "reddit-main"
+# surface = "reddit"
+# handle = "example"
+# ownership = "self_owned"
+# enabled = false

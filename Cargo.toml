@@ -4,6 +4,7 @@ members = [
   "crates/sociarium-core",
   "crates/sociarium-adapter",
   "crates/sociarium-adapter-x",
+  "crates/sociarium-config",
   "crates/sociarium-store",
   "crates/sociarium-cli",
 ]
@@ -17,9 +18,15 @@ repository = "https://github.com/sguzman/sociarium"
 
 [workspace.dependencies]
 async-trait = "0.1"
+base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive"] }
+rand = "0.8"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+toml = "0.8"
+url = "2"

@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": "6679733",
+    "username": "sguzman",
+    "name": "Salvador Guzman",
+    "description": "fixture profile",
+    "profile_image_url": "https://example.invalid/avatar.jpg",
+    "public_metrics": {
+      "followers_count": 10,
+      "following_count": 20,
+      "tweet_count": 30,
+      "listed_count": 1
+    }
+  }
+}
