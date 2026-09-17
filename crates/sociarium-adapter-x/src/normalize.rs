@@ -121,8 +121,8 @@ mod tests {
     fn normalizes_posts_and_preserves_relationship_references_when_present() {
         let envelope: XPostsEnvelope =
             serde_json::from_str(include_str!("../tests/fixtures/posts.json")).unwrap();
-        let records = normalize_posts(&tracked_profile(), "sguzman", &envelope, &observation())
-            .unwrap();
+        let records =
+            normalize_posts(&tracked_profile(), "sguzman", &envelope, &observation()).unwrap();
 
         let NormalizedRecord::Post(post) = &records[1] else {
             panic!("expected post");
