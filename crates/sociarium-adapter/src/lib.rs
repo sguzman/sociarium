@@ -28,6 +28,7 @@ pub struct RawEvidence {
 pub struct SyncBatch {
     pub records: Vec<NormalizedRecord>,
     pub raw: Vec<RawEvidence>,
+    /// Opaque adapter-owned durable checkpoint written only after this batch is durable.
     pub next_cursor: Option<String>,
 }
 
@@ -47,6 +48,16 @@ pub enum AdapterError {
 pub trait SocialAdapter: Send + Sync {
     fn surface_id(&self) -> SurfaceId;
     fn capabilities(&self) -> BTreeSet<Capability>;
+
+    /// Whether a durable cursor returned by `sync_profile` means the current traversal has more
+    /// pages to acquire immediately.
+    ///
+    /// The default preserves the simple adapter convention where any cursor means another page.
+    /// Adapters with incremental high-water checkpoints may override this so a non-empty cursor can
+    /// represent a completed traversal and seed the next incremental sync.
+    fn cursor_has_more(&self, cursor: Option<&str>) -> Result<bool, AdapterError> {
+        Ok(cursor.is_some())
+    }
 
     async fn sync_profile(
         &self,
