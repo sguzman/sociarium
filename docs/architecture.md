@@ -12,7 +12,10 @@ The center of the system is the corpus, not any particular remote API.
 remote surfaces
     |
     v
-surface adapters
+surface adapters <------ operational credentials
+    |                         |
+    |                         v
+    |                  native credential store
     |
     +--> raw evidence
     |
@@ -28,7 +31,7 @@ durable corpus
     +--> future UI / exports
 ```
 
-Remote surfaces own their live systems. Sociarium owns its acquired evidence and local representations.
+Remote surfaces own their live systems. Sociarium owns its acquired evidence and local representations. Credentials remain operational authority outside the corpus.
 
 ## Core concepts
 
@@ -40,9 +43,9 @@ The core stores a stable `SurfaceId`, but surface-specific API types remain in a
 
 ### Adapter
 
-A Rust implementation that understands one surface's authentication, endpoints, pagination, rate limits, object semantics, and capability constraints.
+A Rust implementation that understands one surface's authentication protocol, endpoints, pagination, rate limits, object semantics, and capability constraints.
 
-An adapter translates remote observations into generic records plus lossless or sufficiently rich surface-specific extensions.
+An adapter translates remote observations into generic records plus lossless or sufficiently rich surface-specific extensions. Persistent secret storage is not embedded in the adapter contract; orchestration supplies authenticated adapter instances after resolving profile-scoped credentials.
 
 ### Remote profile
 
@@ -63,7 +66,8 @@ Sociarium distinguishes authority by layer:
 - a remote surface is authoritative for what its API returned at acquisition time;
 - preserved raw evidence is authoritative for what Sociarium actually received;
 - normalized records are Sociarium's typed interpretation of that evidence;
-- derived indexes, summaries, and agent views are disposable projections.
+- derived indexes, summaries, and agent views are disposable projections;
+- credential stores contain operational authority, not historical evidence.
 
 The local corpus is the durable historical record after acquisition. This does not imply that the local state controls or overrides live remote state.
 
@@ -76,18 +80,43 @@ M0 is read/acquisition only.
 ## Dependency direction
 
 ```text
-sociarium-core
-      ^
-      |
-sociarium-adapter <--- sociarium-adapter-x
-      ^                     ^
-      |                     |
-sociarium-store             |
-      ^                     |
-      +------ sociarium-cli-+
+                         sociarium-core
+                         ^      ^     ^
+                        /       |      \
+                       /        |       \
+          sociarium-adapter  config   credentials
+                 ^             ^          ^
+                 |             |          |
+       sociarium-adapter-x     |          |
+                 ^             |          |
+                  \            |         /
+                   \           |        /
+                    +---- sociarium-cli ----+
+                    |          ^             |
+                    |          |             v
+                    |    sociarium-sync   sociarium-search
+                    |          ^             ^
+                    |          |             |
+                    +------ sociarium-store--+
 ```
 
-Future MCP/search crates depend inward on core/store abstractions. Core never depends on adapters, CLI, MCP, or a particular storage engine.
+The diagram is conceptual rather than a complete Cargo edge list. The important direction rules are:
+
+- `sociarium-core` does not depend on adapters, storage, CLI, MCP, or a particular surface;
+- `sociarium-adapter` defines generic acquisition behavior without depending on X;
+- surface adapters depend inward on generic adapter/core types;
+- `sociarium-credentials` stores opaque secret bytes keyed by generic profile identity and does not know X token semantics;
+- `sociarium-sync` orchestrates adapters and durable storage but does not parse surface-specific cursors;
+- `sociarium-search` is a projection over durable corpus records and remains disposable;
+- `sociarium-cli` is the composition root that joins configuration, credentials, adapters, sync, storage, and search.
+
+Future MCP/agent crates should depend on corpus/query abstractions rather than becoming a prerequisite for core behavior.
+
+## Toolchain and dependency resolution
+
+Sociarium declares Rust 1.85 as its minimum supported Rust version and uses Cargo resolver 3 so dependency resolution honors that floor when selecting compatible transitive releases. CI separately verifies current stable Rust, native Windows behavior, and Rust 1.85.
+
+This is part of the architecture contract: a dependency update that silently raises the executable's Rust floor is a compatibility change, not routine drift.
 
 ## Non-goals
 
