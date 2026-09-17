@@ -20,9 +20,9 @@ The first vertical slice is structurally implemented:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issue #5 is now resolved: the X user-post request uses the documented `tweet.fields`, requests `referenced_tweets` and `note_tweet`, normalizes full `note_tweet.text` when present, and explicitly excludes retweets until a portable repost relation exists. Issues #3–#5 are now resolved. Remaining issues #2 and #6–#7 cover dedicated corpus initialization, stable remote-profile binding, and the final profile-aware local preflight.
+A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #3–#6 are now resolved, including X wire/data fidelity, safe remote errors, bounded OAuth callback handling, and explicit Git-safe corpus initialization. Remaining issues #7 and #2 cover stable remote-profile binding and the final profile-aware local preflight.
 
-Preferred implementation order is now **#6 -> #7 -> #2**.
+Preferred implementation order is now **#7 -> #2**.
 
 **Do not treat the live X smoke test as the next step until the remaining pre-live issues are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
 
@@ -70,7 +70,13 @@ sguzman/sociarium/        # Rust software, docs, tests
 <operator corpus>/        # acquisitions, normalized records, provenance, local config
 ```
 
-Issue #6 owns the explicit Git-safe corpus initialization command/policy. Until it lands, do not use a `corpus/` subdirectory inside this public source checkout for a real account merely because the development examples use `cargo run` from here.
+Initialize a real corpus explicitly outside the public software checkout:
+
+```text
+cargo run -p sociarium-cli --locked -- corpus init <CORPUS_ROOT>
+```
+
+Initialization writes a versioned `sociarium-corpus.json` marker, creates the durable layout and non-secret `sociarium.toml` template, and installs corpus-local Git ignore rules for disposable indexes/derived state and `.pending-*` staging directories. It does not run `git init`, create commits, or push anywhere.
 
 If a corpus is pushed to a Git remote, private visibility is the conservative default because future capabilities may include private/authorized observations such as bookmarks. Credentials remain forbidden from the corpus either way.
 
