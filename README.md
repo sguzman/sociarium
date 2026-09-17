@@ -20,9 +20,11 @@ The first vertical slice is structurally implemented:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-A pre-live audit against the current X API contract found remaining repository-side M0 hardening. In particular, issue #5 records a confirmed X wire-protocol defect in the current user-timeline request (`post.fields` must be corrected to the remote API's `tweet.fields`, and relationship/repost semantics must be deliberate). Issues #2–#4 cover local preflight diagnostics, resilient loopback callback handling, and safe remote-error diagnostics.
+A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #2–#6 track that work. The confirmed live blocker is #5: the current user-timeline request uses `post.fields` where X documents `tweet.fields`, and it does not yet request the relationship field the normalizer already understands. The other issues harden remote-error safety, loopback handling, dedicated corpus initialization, and a final profile-aware local preflight.
 
-**Do not treat the live X smoke test as the next step until issues #2–#5 are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App and authorized account.
+Preferred implementation order is **#5 -> #4 -> #3 -> #6 -> #2**.
+
+**Do not treat the live X smoke test as the next step until issues #2–#6 are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
 
 Build resolution is reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
 
@@ -38,6 +40,9 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 - **Rebuildable indexes:** SQLite/search indexes and caches are disposable projections, never the only copy of corpus data.
 - **Direct Rust integrations:** surface adapters talk to remote APIs directly from Rust. External platform CLIs such as `xurl` are not runtime dependencies.
 - **Credential separation:** bearer credentials are operational secret state outside the Git-tracked corpus and configuration.
+- **Source/corpus separation:** the Sociarium software checkout and the operator's durable social corpus are separate authority domains.
+- **Private data is not the same as a credential:** a secret-free corpus can still contain authorized/private observations and should not be assumed safe to publish.
+- **Git is history/transport:** Git may version a corpus; it is not the persistence/query API and GitHub is not corpus authority.
 - **Conspicuous writes:** reading/querying local data is broad; remote mutation is a separate capability boundary.
 - **Inspectable repository:** the corpus should remain understandable even if the Sociarium executable no longer runs.
 
@@ -55,9 +60,22 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 
 Planned later: MCP, media acquisition, additional adapters, broader X corpus objects, and explicit cross-profile identity resolution.
 
+## Software repo versus corpus repo
+
+`sguzman/sociarium` is the software source repository. Real social data belongs in a separate operator-owned corpus directory/repository.
+
+```text
+sguzman/sociarium/        # Rust software, docs, tests
+<operator corpus>/        # acquisitions, normalized records, provenance, local config
+```
+
+Issue #6 owns the explicit Git-safe corpus initialization command/policy. Until it lands, do not use a `corpus/` subdirectory inside this public source checkout for a real account merely because the development examples use `cargo run` from here.
+
+If a corpus is pushed to a Git remote, private visibility is the conservative default because future capabilities may include private/authorized observations such as bookmarks. Credentials remain forbidden from the corpus either way.
+
 ## Configuration
 
-Copy [`sociarium.example.toml`](sociarium.example.toml) to the repository-root `sociarium.toml` for local use. That filename is ignored by default so machine/profile-local configuration is not accidentally published. It is still **not a secret store**.
+For source-tree development, copy [`sociarium.example.toml`](sociarium.example.toml) to the repository-root `sociarium.toml`. That source-root filename is ignored by default so machine/profile-local development configuration is not accidentally published. It is still **not a secret store**.
 
 ```toml
 schema_version = 1
@@ -95,12 +113,12 @@ The CLI prints the X authorization URL, validates the loopback callback, exchang
 The intended synchronization/query path is:
 
 ```text
-cargo run -p sociarium-cli --locked -- --config sociarium.toml --corpus corpus sync x-main
-cargo run -p sociarium-cli --locked -- --corpus corpus posts list --profile x-main
-cargo run -p sociarium-cli --locked -- --corpus corpus posts search sociarium --profile x-main
+cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS_ROOT> sync x-main
+cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts list --profile x-main
+cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts search sociarium --profile x-main
 ```
 
-These live commands describe the M0 path, but the deliberate real-X smoke run is currently blocked on issues #2–#5 above.
+These live commands describe the M0 path, but the deliberate real-X smoke run is currently blocked on issues #2–#6 above.
 
 `SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
 
