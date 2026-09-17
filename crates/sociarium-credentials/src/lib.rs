@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use sociarium_core::{ProfileId, SurfaceId};
 use thiserror::Error;
 
+#[cfg(windows)]
 const SERVICE_NAME: &str = "sociarium";
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -38,6 +39,7 @@ impl CredentialKey {
         }
     }
 
+    #[cfg(any(windows, test))]
     fn account_name(&self) -> String {
         format!(
             "surface={};profile={};slot={}",
@@ -160,6 +162,7 @@ fn entry_for(key: &CredentialKey) -> Result<keyring::Entry, CredentialError> {
         .map_err(|error| CredentialError::Backend(error.to_string()))
 }
 
+#[cfg(any(windows, test))]
 fn encode_component(value: &str) -> String {
     const HEX: &[u8; 16] = b"0123456789ABCDEF";
     let mut encoded = String::with_capacity(value.len());
