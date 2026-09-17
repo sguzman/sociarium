@@ -163,12 +163,13 @@ mod tests {
 
     #[test]
     fn user_posts_url_uses_current_x_wire_fields_and_excludes_retweets() {
-        let url = build_user_posts_url("2244994945", Some("NEXT TOKEN"), Some("1844674407370955161"))
-            .unwrap();
-        let query = url
-            .query_pairs()
-            .into_owned()
-            .collect::<BTreeMap<_, _>>();
+        let url = build_user_posts_url(
+            "2244994945",
+            Some("NEXT TOKEN"),
+            Some("1844674407370955161"),
+        )
+        .unwrap();
+        let query = url.query_pairs().into_owned().collect::<BTreeMap<_, _>>();
 
         assert_eq!(query.get("max_results").map(String::as_str), Some("100"));
         assert_eq!(
