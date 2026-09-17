@@ -19,6 +19,12 @@ ownership = "self_owned"
 enabled = true
 ```
 
+## Local configuration and Git
+
+The repository-root `sociarium.toml` is ignored by default. Copy [`sociarium.example.toml`](../sociarium.example.toml) to `sociarium.toml` for machine/profile-local configuration.
+
+This is a safety and locality default, not permission to put secrets in the file. `sociarium.toml` may contain account handles, profile selection, local callback settings, and other operator-specific state that does not need to become part of the public source repository. If a deployment deliberately wants a configuration file under version control, use an explicitly named tracked configuration and pass it with `--config` rather than weakening the default accidentally.
+
 ## Surface settings are adapter-owned
 
 `[surfaces.<surface>]` is a generic map of non-secret adapter settings. Sociarium core does not gain fields such as `x_client_id`; the X adapter/CLI interprets only the settings under `[surfaces.x]`.
