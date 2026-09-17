@@ -33,6 +33,27 @@ During a multi-page traversal, `since_id` remains the prior completed high-water
 
 This also makes interruption recovery safe: a crash after a page is persisted resumes from the cursor stored with that page rather than repeating or skipping the page transition.
 
+## Credential resolution before sync
+
+Credential lookup is deliberately outside the generic synchronization runner. The runner receives an already-constructed adapter; it does not know how a surface authenticates.
+
+For X, the CLI resolves credentials in this order:
+
+1. if a nonblank `SOCIARIUM_X_ACCESS_TOKEN` process environment override exists, use it for that invocation;
+2. otherwise load the profile-scoped OAuth token envelope from the native credential store;
+3. if the access token is inside the refresh leeway, use the configured X OAuth application settings to refresh it;
+4. persist the refreshed envelope back to the same profile-scoped credential key;
+5. construct the authenticated X adapter and hand it to the generic sync runner.
+
+The normal desktop path is therefore:
+
+```text
+sociarium auth login x-main
+sociarium sync x-main
+```
+
+The environment variable remains an emergency operational escape hatch rather than the normal credential path. Neither path writes bearer material into corpus acquisitions, raw evidence, manifests, normalized records, or indexes. See `security-and-credentials.md`.
+
 ## CLI
 
 The generic command shape is:
@@ -50,18 +71,6 @@ sociarium sync x-main --no-index
 
 A successful sync rebuilds the disposable search index unless `--no-index` is supplied.
 
-## Current X credential bridge
-
-The durable credential-store and OAuth callback UX are not wired into the CLI yet. Until that slice lands, live X sync accepts an already-authorized user access token from the process environment:
-
-```text
-SOCIARIUM_X_ACCESS_TOKEN
-```
-
-This is deliberately an operational bridge, not corpus configuration. The token is never written into raw evidence, normalized records, manifests, search indexes, or `sociarium.toml`.
-
-The environment bridge will be replaced by profile-scoped OS credential-store lookup plus OAuth2/PKCE authorization and refresh-token handling. See `security-and-credentials.md`.
-
 ## Failure rules
 
 The runner rejects:
@@ -73,4 +82,4 @@ The runner rejects:
 - non-terminal cursors that fail to advance;
 - persistence failures before cursor advancement.
 
-A failed index rebuild does not invalidate previously persisted acquisition bundles. The durable corpus remains the authority; the index is a projection.
+Authentication failures occur before the generic runner starts or are returned by the adapter as remote/authentication errors. A failed index rebuild does not invalidate previously persisted acquisition bundles. The durable corpus remains the authority; the index is a projection.
