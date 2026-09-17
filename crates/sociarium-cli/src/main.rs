@@ -1,8 +1,9 @@
 use std::env;
 use std::error::Error;
-use std::io::{self, BufRead, BufReader, Write};
-use std::net::TcpListener;
+use std::io::{self, BufRead, BufReader, Read, Write};
+use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
+use std::time::{Duration as StdDuration, Instant};
 
 use chrono::{Duration, Utc};
 use clap::{Parser, Subcommand};
@@ -462,9 +463,19 @@ fn required_surface_setting<'a>(
     })
 }
 
+const DEFAULT_OAUTH_CALLBACK_TIMEOUT: StdDuration = StdDuration::from_secs(180);
+const OAUTH_CALLBACK_POLL_INTERVAL: StdDuration = StdDuration::from_millis(20);
+const OAUTH_CONNECTION_READ_TIMEOUT: StdDuration = StdDuration::from_secs(2);
+const MAX_OAUTH_REQUEST_LINE_BYTES: usize = 8_192;
+
 struct OAuthCallbackListener {
     listener: TcpListener,
     expected_path: String,
+}
+
+enum CallbackOutcome {
+    Ignored,
+    Authorized(String),
 }
 
 impl OAuthCallbackListener {
@@ -491,6 +502,7 @@ impl OAuthCallbackListener {
             )
         })?;
         let listener = TcpListener::bind(("127.0.0.1", port))?;
+        listener.set_nonblocking(true)?;
         Ok(Self {
             listener,
             expected_path: redirect.path().to_owned(),
@@ -498,88 +510,178 @@ impl OAuthCallbackListener {
     }
 
     fn wait_for_code(&self, session: &XOAuthSession) -> Result<String, Box<dyn Error>> {
-        let (mut stream, _) = self.listener.accept()?;
-        let mut request_line = String::new();
-        BufReader::new(stream.try_clone()?).read_line(&mut request_line)?;
-        if request_line.len() > 8_192 {
-            send_callback_response(&mut stream, 400, "OAuth callback request was too large.")?;
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "OAuth callback request line exceeded 8192 bytes",
-            )
-            .into());
+        self.wait_for_code_with_timeout(session, DEFAULT_OAUTH_CALLBACK_TIMEOUT)
+    }
+
+    fn wait_for_code_with_timeout(
+        &self,
+        session: &XOAuthSession,
+        timeout: StdDuration,
+    ) -> Result<String, Box<dyn Error>> {
+        let deadline = Instant::now() + timeout;
+
+        loop {
+            let remaining = deadline.saturating_duration_since(Instant::now());
+            if remaining.is_zero() {
+                return Err(oauth_callback_timeout().into());
+            }
+
+            match self.listener.accept() {
+                Ok((mut stream, _)) => {
+                    let remaining = deadline.saturating_duration_since(Instant::now());
+                    if remaining.is_zero() {
+                        return Err(oauth_callback_timeout().into());
+                    }
+                    stream.set_read_timeout(Some(remaining.min(OAUTH_CONNECTION_READ_TIMEOUT)))?;
+
+                    match self.handle_connection(&mut stream, session)? {
+                        CallbackOutcome::Ignored => {}
+                        CallbackOutcome::Authorized(code) => return Ok(code),
+                    }
+                }
+                Err(error) if error.kind() == io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(
+                        deadline
+                            .saturating_duration_since(Instant::now())
+                            .min(OAUTH_CALLBACK_POLL_INTERVAL),
+                    );
+                }
+                Err(error) => return Err(error.into()),
+            }
         }
+    }
+
+    fn handle_connection(
+        &self,
+        stream: &mut TcpStream,
+        session: &XOAuthSession,
+    ) -> Result<CallbackOutcome, Box<dyn Error>> {
+        let mut request_line = Vec::with_capacity(512);
+        let mut reader = BufReader::new(stream.try_clone()?)
+            .take((MAX_OAUTH_REQUEST_LINE_BYTES + 1) as u64);
+
+        match reader.read_until(b'\n', &mut request_line) {
+            Ok(0) => return Ok(CallbackOutcome::Ignored),
+            Ok(_) => {}
+            Err(error)
+                if matches!(
+                    error.kind(),
+                    io::ErrorKind::WouldBlock | io::ErrorKind::TimedOut
+                ) =>
+            {
+                let _ = send_callback_response(stream, 408, "OAuth callback request timed out.");
+                return Ok(CallbackOutcome::Ignored);
+            }
+            Err(error) => return Err(error.into()),
+        }
+
+        if request_line.len() > MAX_OAUTH_REQUEST_LINE_BYTES {
+            let _ = send_callback_response(stream, 400, "OAuth callback request was too large.");
+            return Ok(CallbackOutcome::Ignored);
+        }
+
+        let request_line = match std::str::from_utf8(&request_line) {
+            Ok(line) => line,
+            Err(_) => {
+                let _ = send_callback_response(stream, 400, "Malformed OAuth callback request.");
+                return Ok(CallbackOutcome::Ignored);
+            }
+        };
 
         let mut parts = request_line.split_whitespace();
         if parts.next() != Some("GET") {
-            send_callback_response(&mut stream, 405, "Expected an OAuth GET callback.")?;
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "OAuth callback did not use GET",
-            )
-            .into());
+            let _ = send_callback_response(stream, 405, "Expected an OAuth GET callback.");
+            return Ok(CallbackOutcome::Ignored);
         }
-        let target = parts.next().ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "OAuth callback target missing")
-        })?;
-        let callback = Url::parse(&format!("http://127.0.0.1{target}"))?;
+        let Some(target) = parts.next() else {
+            let _ = send_callback_response(stream, 400, "Malformed OAuth callback request.");
+            return Ok(CallbackOutcome::Ignored);
+        };
+        let callback = match Url::parse(&format!("http://127.0.0.1{target}")) {
+            Ok(callback) => callback,
+            Err(_) => {
+                let _ = send_callback_response(stream, 400, "Malformed OAuth callback request.");
+                return Ok(CallbackOutcome::Ignored);
+            }
+        };
         if callback.path() != self.expected_path {
-            send_callback_response(&mut stream, 404, "Unexpected OAuth callback path.")?;
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "OAuth callback path did not match configured redirect URI",
-            )
-            .into());
+            let _ = send_callback_response(stream, 404, "Unexpected OAuth callback path.");
+            return Ok(CallbackOutcome::Ignored);
         }
 
         let parameters = callback
             .query_pairs()
             .into_owned()
             .collect::<std::collections::BTreeMap<_, _>>();
-        if let Some(remote_error) = parameters.get("error") {
-            send_callback_response(&mut stream, 400, "X authorization was not granted.")?;
+
+        if parameters.contains_key("error") {
+            let _ = send_callback_response(stream, 400, "X authorization was not granted.");
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
-                format!("X OAuth callback returned error: {remote_error}"),
+                "X OAuth callback returned an authorization error",
             )
             .into());
         }
-        let state = parameters.get("state").ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "OAuth callback state missing")
-        })?;
+
+        let state = match parameters.get("state") {
+            Some(state) => state,
+            None => {
+                let _ = send_callback_response(stream, 400, "OAuth state validation failed.");
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "OAuth callback state missing",
+                )
+                .into());
+            }
+        };
         if !session.state_matches(state) {
-            send_callback_response(&mut stream, 400, "OAuth state validation failed.")?;
+            let _ = send_callback_response(stream, 400, "OAuth state validation failed.");
             return Err(io::Error::new(
                 io::ErrorKind::PermissionDenied,
                 "OAuth callback state mismatch",
             )
             .into());
         }
-        let code = parameters.get("code").cloned().ok_or_else(|| {
-            io::Error::new(
-                io::ErrorKind::InvalidData,
-                "OAuth callback authorization code missing",
-            )
-        })?;
-        send_callback_response(
-            &mut stream,
+
+        let code = match parameters.get("code") {
+            Some(code) if !code.trim().is_empty() => code.clone(),
+            _ => {
+                let _ = send_callback_response(
+                    stream,
+                    400,
+                    "OAuth callback authorization code missing.",
+                );
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "OAuth callback authorization code missing",
+                )
+                .into());
+            }
+        };
+
+        let _ = send_callback_response(
+            stream,
             200,
             "Sociarium received the authorization. You may close this tab and return to the terminal.",
-        )?;
-        Ok(code)
+        );
+        Ok(CallbackOutcome::Authorized(code))
     }
 }
 
-fn send_callback_response(
-    stream: &mut std::net::TcpStream,
-    status: u16,
-    message: &str,
-) -> io::Result<()> {
+fn oauth_callback_timeout() -> io::Error {
+    io::Error::new(
+        io::ErrorKind::TimedOut,
+        "OAuth callback timed out before authorization completed",
+    )
+}
+
+fn send_callback_response(stream: &mut TcpStream, status: u16, message: &str) -> io::Result<()> {
     let reason = match status {
         200 => "OK",
         400 => "Bad Request",
         404 => "Not Found",
         405 => "Method Not Allowed",
+        408 => "Request Timeout",
         _ => "Error",
     };
     let body =
@@ -637,4 +739,185 @@ fn print_hit(hit: &PostHit) {
         hit.canonical_url.as_deref().unwrap_or("-"),
         text
     );
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std::io::{Read as _, Write as _};
+    use std::net::{SocketAddr, TcpStream};
+    use std::thread;
+
+    use super::*;
+
+    fn test_session() -> XOAuthSession {
+        XOAuthConfig::new(
+            "test-client",
+            "http://127.0.0.1:49152/oauth/x/callback",
+        )
+        .unwrap()
+        .begin()
+        .unwrap()
+    }
+
+    fn test_listener() -> OAuthCallbackListener {
+        OAuthCallbackListener::bind("http://127.0.0.1:0/oauth/x/callback").unwrap()
+    }
+
+    fn send_request(address: SocketAddr, request: &str) {
+        let mut stream = TcpStream::connect(address).unwrap();
+        stream
+            .set_read_timeout(Some(StdDuration::from_secs(1)))
+            .unwrap();
+        stream.write_all(request.as_bytes()).unwrap();
+        let mut response = String::new();
+        let _ = stream.read_to_string(&mut response);
+    }
+
+    #[test]
+    fn callback_times_out_when_no_request_arrives() {
+        let listener = test_listener();
+        let session = test_session();
+
+        let error = listener
+            .wait_for_code_with_timeout(&session, StdDuration::from_millis(40))
+            .unwrap_err();
+
+        assert!(error.to_string().contains("timed out"));
+    }
+
+    #[test]
+    fn unrelated_path_then_valid_callback_succeeds() {
+        let listener = test_listener();
+        let address = listener.listener.local_addr().unwrap();
+        let session = test_session();
+        let state = session.state().to_owned();
+
+        let worker = thread::spawn(move || {
+            send_request(
+                address,
+                "GET /favicon.ico HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            );
+            send_request(
+                address,
+                &format!(
+                    "GET /oauth/x/callback?state={state}&code=secret-code HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+                ),
+            );
+        });
+
+        let code = listener
+            .wait_for_code_with_timeout(&session, StdDuration::from_secs(2))
+            .unwrap();
+        worker.join().unwrap();
+
+        assert_eq!(code, "secret-code");
+    }
+
+    #[test]
+    fn unsupported_method_then_valid_callback_succeeds() {
+        let listener = test_listener();
+        let address = listener.listener.local_addr().unwrap();
+        let session = test_session();
+        let state = session.state().to_owned();
+
+        let worker = thread::spawn(move || {
+            send_request(
+                address,
+                "POST /oauth/x/callback HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            );
+            send_request(
+                address,
+                &format!(
+                    "GET /oauth/x/callback?state={state}&code=secret-code HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+                ),
+            );
+        });
+
+        assert_eq!(
+            listener
+                .wait_for_code_with_timeout(&session, StdDuration::from_secs(2))
+                .unwrap(),
+            "secret-code"
+        );
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn oversized_request_then_valid_callback_succeeds() {
+        let listener = test_listener();
+        let address = listener.listener.local_addr().unwrap();
+        let session = test_session();
+        let state = session.state().to_owned();
+
+        let worker = thread::spawn(move || {
+            let oversized = format!(
+                "GET /{} HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+                "x".repeat(MAX_OAUTH_REQUEST_LINE_BYTES + 256)
+            );
+            send_request(address, &oversized);
+            send_request(
+                address,
+                &format!(
+                    "GET /oauth/x/callback?state={state}&code=secret-code HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+                ),
+            );
+        });
+
+        assert_eq!(
+            listener
+                .wait_for_code_with_timeout(&session, StdDuration::from_secs(2))
+                .unwrap(),
+            "secret-code"
+        );
+        worker.join().unwrap();
+    }
+
+    #[test]
+    fn state_mismatch_is_terminal_without_echoing_callback_secrets() {
+        let listener = test_listener();
+        let address = listener.listener.local_addr().unwrap();
+        let session = test_session();
+
+        let worker = thread::spawn(move || {
+            send_request(
+                address,
+                "GET /oauth/x/callback?state=wrong-secret-state&code=secret-code HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            );
+        });
+
+        let rendered = listener
+            .wait_for_code_with_timeout(&session, StdDuration::from_secs(2))
+            .unwrap_err()
+            .to_string();
+        worker.join().unwrap();
+
+        assert!(rendered.contains("state mismatch"));
+        assert!(!rendered.contains("wrong-secret-state"));
+        assert!(!rendered.contains("secret-code"));
+    }
+
+    #[test]
+    fn explicit_oauth_error_is_terminal_without_echoing_remote_query() {
+        let listener = test_listener();
+        let address = listener.listener.local_addr().unwrap();
+        let session = test_session();
+
+        let worker = thread::spawn(move || {
+            send_request(
+                address,
+                "GET /oauth/x/callback?error=access_denied&error_description=remote-secret-description HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n",
+            );
+        });
+
+        let rendered = listener
+            .wait_for_code_with_timeout(&session, StdDuration::from_secs(2))
+            .unwrap_err()
+            .to_string();
+        worker.join().unwrap();
+
+        assert!(rendered.contains("authorization error"));
+        assert!(!rendered.contains("access_denied"));
+        assert!(!rendered.contains("remote-secret-description"));
+    }
 }
