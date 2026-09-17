@@ -3,6 +3,7 @@ use thiserror::Error;
 use url::Url;
 
 use crate::models::{XPostsEnvelope, XUserEnvelope};
+use crate::remote_error::safe_remote_category;
 
 const API_BASE: &str = "https://api.x.com/2/";
 const USER_POST_FIELDS: &str = "created_at,referenced_tweets,note_tweet";
@@ -59,13 +60,10 @@ impl XApiClient {
         let bytes = response.bytes().await?.to_vec();
 
         if !status.is_success() {
-            let body = String::from_utf8_lossy(&bytes)
-                .chars()
-                .take(512)
-                .collect::<String>();
+            let status = status.as_u16();
             return Err(XApiError::Remote {
-                status: status.as_u16(),
-                body,
+                status,
+                category: safe_remote_category(status, &bytes),
             });
         }
 
@@ -119,8 +117,11 @@ pub enum XApiError {
     Transport(#[from] reqwest::Error),
     #[error("X response JSON error: {0}")]
     Json(#[from] serde_json::Error),
-    #[error("X API returned HTTP {status}: {body}")]
-    Remote { status: u16, body: String },
+    #[error("X API returned HTTP {status} ({category})")]
+    Remote {
+        status: u16,
+        category: &'static str,
+    },
 }
 
 fn validate_user_id(value: &str) -> Result<(), XApiError> {
@@ -159,6 +160,24 @@ mod tests {
     fn accepts_x_snowflake_shaped_ids() {
         validate_user_id("2244994945").unwrap();
         validate_post_id("1844674407370955161").unwrap();
+    }
+
+    #[test]
+    fn remote_api_error_display_is_safe_by_construction() {
+        let body = br#"{
+            "title":"Too Many Requests",
+            "detail":"private-post-text access-secret refresh-secret"
+        }"#;
+        let error = XApiError::Remote {
+            status: 429,
+            category: safe_remote_category(429, body),
+        };
+        let rendered = error.to_string();
+
+        assert_eq!(rendered, "X API returned HTTP 429 (rate_limit)");
+        assert!(!rendered.contains("private-post-text"));
+        assert!(!rendered.contains("access-secret"));
+        assert!(!rendered.contains("refresh-secret"));
     }
 
     #[test]
