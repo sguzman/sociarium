@@ -118,10 +118,7 @@ pub enum XApiError {
     #[error("X response JSON error: {0}")]
     Json(#[from] serde_json::Error),
     #[error("X API returned HTTP {status} ({category})")]
-    Remote {
-        status: u16,
-        category: &'static str,
-    },
+    Remote { status: u16, category: &'static str },
 }
 
 fn validate_user_id(value: &str) -> Result<(), XApiError> {
