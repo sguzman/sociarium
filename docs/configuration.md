@@ -1,11 +1,15 @@
 # Configuration
 
-Sociarium configuration describes **what the corpus tracks**, not secret credentials used to access remote surfaces.
+Sociarium configuration describes **what the corpus tracks** and the non-secret settings required to talk to configured surfaces. It does not contain bearer credentials.
 
 The current schema is version `1` and is represented as TOML. See [`sociarium.example.toml`](../sociarium.example.toml).
 
 ```toml
 schema_version = 1
+
+[surfaces.x]
+client_id = "replace-with-your-x-app-client-id"
+redirect_uri = "http://127.0.0.1:49152/oauth/x/callback"
 
 [[profiles]]
 id = "x-main"
@@ -14,6 +18,18 @@ handle = "sguzman"
 ownership = "self_owned"
 enabled = true
 ```
+
+## Surface settings are adapter-owned
+
+`[surfaces.<surface>]` is a generic map of non-secret adapter settings. Sociarium core does not gain fields such as `x_client_id`; the X adapter/CLI interprets only the settings under `[surfaces.x]`.
+
+For M0 X authorization:
+
+- `client_id` identifies the registered X Developer App and is not treated as a bearer secret;
+- `redirect_uri` is the loopback callback URI used by the native OAuth2/PKCE flow and must match the URI registered with X;
+- the current CLI requires an `http://127.0.0.1:<port>/...` redirect so the callback listener remains loopback-only.
+
+Future adapters can define their own non-secret settings without changing the profile ontology.
 
 ## Profiles are first-class
 
@@ -29,7 +45,7 @@ Each `[[profiles]]` entry is an independent synchronization scope. The same surf
 
 `ownership` describes the relationship between the corpus operator and the profile. M0 X synchronization is intentionally limited to `self_owned` because it uses authenticated-user context.
 
-`enabled` controls whether broad commands such as a future `sync --all` should include the profile. Explicit profile operations may still address disabled profiles when that behavior is documented.
+`enabled` controls whether broad commands such as a future `sync --all` should include the profile. The current explicit `sync <profile-id>` runner rejects disabled profiles.
 
 ## CLI inspection
 
@@ -40,6 +56,15 @@ sociarium --config sociarium.toml profiles list
 
 Neither command contacts a remote surface.
 
+Authorization is a separate operation:
+
+```text
+sociarium --config sociarium.toml auth login x-main
+sociarium --config sociarium.toml auth status x-main
+```
+
 ## Secrets do not belong here
 
-Client secrets, access tokens, refresh tokens, passwords, session cookies, and other bearer credentials must not be written into this TOML file or any Git-tracked corpus path. See [`security-and-credentials.md`](security-and-credentials.md).
+Client secrets, access tokens, refresh tokens, passwords, session cookies, PKCE verifiers, authorization codes, and other bearer credentials must not be written into this TOML file or any Git-tracked corpus path.
+
+On Windows, M0 persists profile-scoped OAuth token envelopes in Windows Credential Manager through `sociarium-credentials`. See [`security-and-credentials.md`](security-and-credentials.md).
