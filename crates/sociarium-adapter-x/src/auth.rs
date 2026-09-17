@@ -438,7 +438,9 @@ mod tests {
 
         assert_eq!(parsed.access_token(), "access-secret");
         assert_eq!(parsed.refresh_token(), Some("prior-refresh-secret"));
-        assert!(parsed.should_refresh(received_at + Duration::seconds(3590), Duration::seconds(30)));
+        assert!(
+            parsed.should_refresh(received_at + Duration::seconds(3590), Duration::seconds(30))
+        );
 
         let rendered = format!("{parsed:?}");
         assert!(!rendered.contains("access-secret"));
