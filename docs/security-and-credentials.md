@@ -70,7 +70,7 @@ sociarium auth logout x-main
 8. exchanges the short-lived code for tokens;
 9. stores the redacted/versioned token envelope under that profile's native credential key.
 
-The callback listener accepts only the configured `http://127.0.0.1:<port>/...` path. It does not archive callback requests or OAuth token responses.
+The callback listener accepts only the configured `http://127.0.0.1:<port>/...` path for authorization success. It waits for at most three minutes, consumes at most 8 KiB of request-line input per connection, and may ignore/respond to unrelated loopback requests while continuing the same authorization session. A callback on the configured path with a mismatched OAuth `state` or explicit authorization error remains terminal. Callback request URLs, query values, authorization codes, and OAuth token responses are not archived or emitted through generic diagnostics.
 
 `auth status` reports presence, expiry, refresh-token availability, and emergency environment override state without printing bearer values.
 
