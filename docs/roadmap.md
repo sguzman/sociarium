@@ -19,14 +19,17 @@ configured X profile
 
 Repository implementation status: **structurally complete but still under pre-live hardening**. A current-contract audit performed before the first live X run found repository-side work that must be resolved before the end-to-end smoke test.
 
-Open M0 pre-live work is tracked in issues #2–#5:
+Open M0 pre-live work is tracked in issues #2–#6:
 
-- profile-aware local preflight diagnostics;
-- bounded/resilient OAuth loopback handling;
-- non-secret-by-construction X/OAuth failure diagnostics;
-- a confirmed X wire-contract correction for the user timeline (`tweet.fields`, plus deliberate relationship-field/repost semantics).
+- correct the X user-timeline wire request and relationship/repost semantics (#5);
+- make X/OAuth failure diagnostics non-secret by construction (#4);
+- make OAuth loopback handling bounded and resilient (#3);
+- initialize a separate Git-safe operator corpus rather than conflating it with the public software checkout (#6);
+- compose the settled local boundaries into a profile-aware no-network preflight (#2).
 
-After those are integrated and CI is green, the final M0 gate is one live end-to-end smoke test with a registered X Developer App and authorized account, exercising native login, persisted credentials, acquisition, durable sync state, index rebuild, and local query against real remote data.
+Preferred implementation order is **#5 -> #4 -> #3 -> #6 -> #2**.
+
+After those are integrated and CI is green, the final M0 gate is one live end-to-end smoke test with a registered X Developer App and authorized account, exercising native login, persisted credentials, acquisition into the dedicated corpus, durable sync state, index rebuild, and local query against real remote data.
 
 Current M0 implementation includes:
 
@@ -43,6 +46,8 @@ Current M0 implementation includes:
 - committed reproducible `Cargo.lock`, resolver 3, and explicit MSRV-compatible dependency choices;
 - Linux stable, native Windows, and Rust 1.85 locked CI coverage.
 
+M0 corpus-history claim: the first X sync can only bootstrap the history the current user-post timeline exposes (approximately the most recent 3,200 Posts). Sociarium's durable value is preserving acquired evidence and maintaining forward incremental continuity; complete older lifetime history requires another acquisition source such as an export/import or broader remote archive access.
+
 Explicitly not M0: posting, deleting, arbitrary public-X search, GUI, MCP, cross-platform identity resolution, additional adapters, deep thread/context acquisition, and full repost/reblog ontology.
 
 ## M1 — X corpus depth
@@ -55,7 +60,7 @@ Explicitly not M0: posting, deleting, arbitrary public-X search, GUI, MCP, cross
 - more sync diagnostics and recovery tooling;
 - media metadata and optional acquisition;
 - corpus migrations/schema versioning;
-- import/bootstrap paths for existing X archives if useful.
+- import/bootstrap paths for existing X archives or older history if useful.
 
 ## M2 — Agent surface
 
