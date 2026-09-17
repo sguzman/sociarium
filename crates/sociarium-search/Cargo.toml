@@ -1,0 +1,15 @@
+[package]
+name = "sociarium-search"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+chrono.workspace = true
+rusqlite.workspace = true
+serde_json.workspace = true
+sociarium-core = { path = "../sociarium-core" }
+sociarium-store = { path = "../sociarium-store" }
+thiserror.workspace = true
