@@ -17,26 +17,38 @@ configured X profile
   -> query from CLI
 ```
 
-Repository implementation status: complete. The remaining M0 gate is one live end-to-end smoke test with a registered X Developer App and authorized account, exercising native login, persisted credentials, acquisition, durable sync state, index rebuild, and local query against real remote data.
+Repository implementation status: **structurally complete but still under pre-live hardening**. A current-contract audit performed before the first live X run found repository-side work that must be resolved before the end-to-end smoke test.
+
+Open M0 pre-live work is tracked in issues #2–#5:
+
+- profile-aware local preflight diagnostics;
+- bounded/resilient OAuth loopback handling;
+- non-secret-by-construction X/OAuth failure diagnostics;
+- a confirmed X wire-contract correction for the user timeline (`tweet.fields`, plus deliberate relationship-field/repost semantics).
+
+After those are integrated and CI is green, the final M0 gate is one live end-to-end smoke test with a registered X Developer App and authorized account, exercising native login, persisted credentials, acquisition, durable sync state, index rebuild, and local query against real remote data.
 
 Current M0 implementation includes:
 
 - generic profile and per-surface non-secret configuration;
-- native OAuth2 Authorization Code + PKCE for X;
+- native OAuth2 Authorization Code + S256 PKCE for X;
 - profile-scoped Windows Credential Manager persistence;
 - refresh-token rollover and automatic refresh before sync;
 - direct Rust X API acquisition;
 - raw + normalized acquisition bundles;
+- generic `Post` reply/quote relationship fields and X normalization support;
 - durable incremental/cursor state with crash recovery;
 - rebuildable SQLite/FTS index;
 - CLI auth, sync, list, and search commands;
-- Linux stable, native Windows, and Rust 1.85 CI coverage.
+- committed reproducible `Cargo.lock`, resolver 3, and explicit MSRV-compatible dependency choices;
+- Linux stable, native Windows, and Rust 1.85 locked CI coverage.
 
-Explicitly not M0: posting, deleting, arbitrary public-X search, GUI, MCP, cross-platform identity resolution, additional adapters.
+Explicitly not M0: posting, deleting, arbitrary public-X search, GUI, MCP, cross-platform identity resolution, additional adapters, deep thread/context acquisition, and full repost/reblog ontology.
 
 ## M1 — X corpus depth
 
-- replies/quotes/reposts where available;
+- richer reply/quote/thread context beyond M0's minimal relationship references;
+- explicit repost/reblog semantics and acquisition where available;
 - richer profile snapshots/history;
 - likes/bookmarks for authenticated owned profiles where API access permits;
 - following/follower observations;
