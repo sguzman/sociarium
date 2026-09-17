@@ -2,10 +2,14 @@
 
 This runbook is the final M0 validation gate. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
 
-Do not put tokens, authorization codes, PKCE verifiers, client secrets, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
+> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issues #2–#5 remain open. Issue #5 is a confirmed X wire-contract blocker in the current timeline request. This runbook describes the intended final procedure after those repository-side fixes are integrated and CI is green.
+
+Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw failed OAuth/API response bodies, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
 
 ## Preconditions
 
+- M0 pre-live issues #2–#5 are closed with their acceptance criteria satisfied.
+- Linux stable, native Windows, and Rust 1.85 locked CI are green on the exact `main` head being tested.
 - Windows is the test host.
 - The repository is on the current `main` branch.
 - Rust/Cargo can build the workspace using the committed `Cargo.lock`.
@@ -29,7 +33,7 @@ offline.access
 
 ## 1. Prepare local configuration
 
-Copy `sociarium.example.toml` to an untracked/local `sociarium.toml` if needed and set the real X Client ID:
+Copy `sociarium.example.toml` to the repository-root `sociarium.toml` if needed and set the real X Client ID. The root `sociarium.toml` is ignored by default.
 
 ```toml
 schema_version = 1
@@ -46,7 +50,7 @@ ownership = "self_owned"
 enabled = true
 ```
 
-The Client ID is application identification, not a bearer token. Do not add a client secret to this file.
+The Client ID is application identification, not a bearer token. Do not add a client secret or bearer credential to this file merely because it is ignored by Git.
 
 Validate before contacting X:
 
@@ -56,7 +60,9 @@ cargo run -p sociarium-cli --locked -- --config sociarium.toml profiles list
 cargo run -p sociarium-cli --locked -- doctor
 ```
 
-Expected: configuration validates, `x-main` is enabled, and Windows reports the native credential store as available.
+Expected today: configuration validates, `x-main` is enabled, and Windows reports the native credential store as available.
+
+Issue #2 will replace/augment these coarse checks with a profile-aware no-network preflight that also verifies OAuth configuration, loopback binding, an isolated native credential-store round trip, corpus initialization, and emergency-env state. Once #2 is implemented, use that profile-aware preflight as the authoritative first smoke-test command.
 
 ## 2. Start from a known authorization state
 
@@ -85,13 +91,14 @@ cargo run -p sociarium-cli --locked -- --config sociarium.toml auth login x-main
 Sociarium should:
 
 1. bind only the configured loopback callback;
-2. print an X authorization URL containing a PKCE challenge and random state;
-3. wait for the callback;
-4. let the user authorize the requested read/offline scopes in X;
-5. reject a callback whose state does not match;
-6. exchange the short-lived authorization code immediately;
-7. store the resulting token envelope under the profile-scoped Windows credential key;
-8. report success without printing token values.
+2. print an X authorization URL containing an S256 PKCE challenge and random state;
+3. wait for the callback for a bounded period;
+4. tolerate unrelated loopback/browser requests without consuming the authorization session;
+5. let the user authorize the requested read/offline scopes in X;
+6. reject the configured callback if its OAuth `state` does not match;
+7. exchange the short-lived authorization code immediately;
+8. store the resulting token envelope under the profile-scoped Windows credential key;
+9. report success without printing token values.
 
 After authorization:
 
@@ -113,13 +120,17 @@ Expected:
 
 - authenticated-user lookup succeeds;
 - the configured remote ID is checked if one is configured;
+- the X user-post request uses the current remote wire contract (`tweet.fields`, including the relationship fields required by M0's normalized semantics);
+- the chosen M0 repost policy is applied deliberately rather than flattening an unsupported repost relation;
 - one or more acquisition pages are persisted;
-- each acquisition contains raw evidence and normalized records;
+- each successful acquisition contains raw evidence and normalized records;
 - a durable X checkpoint is stored;
 - the disposable search index is rebuilt after sync;
 - no bearer token appears in the corpus.
 
-Record only non-secret terminal output and resulting corpus paths as smoke-test evidence.
+The first traversal bootstraps the historical window X currently exposes for the user-post endpoint, not necessarily the account's complete lifetime history. X currently limits this timeline to roughly the most recent 3,200 Posts. The smoke test proves correct acquisition/preservation of the available window and forward incremental continuity; it does not prove a lifetime-complete historical export.
+
+Record only non-secret terminal output and resulting corpus paths as smoke-test evidence. Remote failure diagnostics should be the sanitized/structured form established by issue #4, not pasted raw response bodies.
 
 ## 5. Verify local query behavior
 
@@ -136,6 +147,8 @@ cargo run -p sociarium-cli --locked -- --corpus corpus posts search YOUR_TERM --
 ```
 
 Expected: results are served from the local index and contain the normalized post identity/text/URL information without contacting X.
+
+If the acquired sample includes a reply or quote Post, inspect at least one normalized acquisition to confirm the requested remote relationship field survives into `reply_to` or `quote_of` where applicable.
 
 ## 6. Verify incremental checkpoint behavior
 
@@ -176,11 +189,12 @@ This optional delayed check is useful evidence but is not required to block the 
 Classify a failure before changing architecture:
 
 - **configuration failure:** malformed/missing `[surfaces.x]` setting or profile;
+- **local preflight failure:** callback port/binding, credential-store round trip, corpus initialization, or environment state fails before X is contacted;
 - **developer-app failure:** OAuth2 disabled, wrong app type, callback mismatch, or missing permitted scope;
 - **authorization failure:** user denies access, state mismatch, expired authorization code, or token exchange rejection;
 - **credential-store failure:** Windows credential backend cannot save/load/delete the envelope;
 - **API entitlement/rate failure:** X accepts authentication but rejects the requested endpoint because of current API access/rate policy;
-- **adapter failure:** X response shape/endpoint behavior no longer matches the adapter;
+- **adapter/wire-contract failure:** X response shape, endpoint, query parameter, or field behavior no longer matches the adapter;
 - **persistence failure:** acquisition data or cursor cannot be durably written;
 - **index/query failure:** corpus persists correctly but projection rebuild/query fails.
 
@@ -188,15 +202,17 @@ Do not bypass a failure by moving tokens into `sociarium.toml` or the corpus. Fi
 
 ## M0 completion evidence
 
-M0 can close when the real smoke run demonstrates all of these together:
+M0 can close when the repository-side pre-live issues are resolved and the real smoke run demonstrates all of these together:
 
-- native PKCE login succeeds;
+- profile-aware local preflight passes without contacting X;
+- native S256 PKCE login succeeds;
 - Windows Credential Manager retains the profile-scoped credential;
-- first X sync persists real raw + normalized data;
+- first X sync persists real raw + normalized data from the retrievable remote window;
+- supported reply/quote references are preserved when present;
 - durable checkpoint is present;
 - second sync starts from prior state;
 - local index rebuild succeeds;
 - local list/search returns acquired posts;
-- no bearer secret is found in tracked/local corpus data.
+- no bearer secret is found in tracked/local corpus data or pasteable diagnostics.
 
 Once recorded, update issue #1 with the smoke-test result and close M0.
