@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
@@ -8,9 +8,23 @@ use thiserror::Error;
 
 pub const CONFIG_SCHEMA_VERSION: u32 = 1;
 
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+pub struct SurfaceConfig {
+    #[serde(flatten)]
+    pub settings: BTreeMap<String, String>,
+}
+
+impl SurfaceConfig {
+    pub fn get(&self, key: &str) -> Option<&str> {
+        self.settings.get(key).map(String::as_str)
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SociariumConfig {
     pub schema_version: u32,
+    #[serde(default)]
+    pub surfaces: BTreeMap<String, SurfaceConfig>,
     #[serde(default)]
     pub profiles: Vec<TrackedProfile>,
 }
@@ -30,6 +44,17 @@ impl SociariumConfig {
     pub fn validate(&self) -> Result<(), ConfigError> {
         if self.schema_version != CONFIG_SCHEMA_VERSION {
             return Err(ConfigError::UnsupportedSchemaVersion(self.schema_version));
+        }
+
+        for (surface, config) in &self.surfaces {
+            if surface.trim().is_empty() {
+                return Err(ConfigError::BlankSurfaceId);
+            }
+            for key in config.settings.keys() {
+                if key.trim().is_empty() {
+                    return Err(ConfigError::BlankSurfaceSetting(surface.clone()));
+                }
+            }
         }
 
         let mut ids = BTreeSet::new();
@@ -61,6 +86,14 @@ impl SociariumConfig {
     pub fn enabled_profiles(&self) -> impl Iterator<Item = &TrackedProfile> {
         self.profiles.iter().filter(|profile| profile.enabled)
     }
+
+    pub fn surface(&self, surface: &str) -> Option<&SurfaceConfig> {
+        self.surfaces.get(surface)
+    }
+
+    pub fn surface_setting(&self, surface: &str, key: &str) -> Option<&str> {
+        self.surface(surface).and_then(|config| config.get(key))
+    }
 }
 
 #[derive(Debug, Error)]
@@ -73,6 +106,10 @@ pub enum ConfigError {
     UnsupportedSchemaVersion(u32),
     #[error("configuration field cannot be blank: {0}")]
     BlankField(&'static str),
+    #[error("surface id cannot be blank")]
+    BlankSurfaceId,
+    #[error("surface configuration contains a blank setting key: {0}")]
+    BlankSurfaceSetting(String),
     #[error("duplicate profile id: {0}")]
     DuplicateProfileId(String),
 }
@@ -86,6 +123,10 @@ mod tests {
         let config = SociariumConfig::from_toml(
             r#"
 schema_version = 1
+
+[surfaces.x]
+client_id = "example-client"
+redirect_uri = "http://127.0.0.1:49152/oauth/x/callback"
 
 [[profiles]]
 id = "x-main"
@@ -108,6 +149,14 @@ enabled = false
         assert_eq!(config.enabled_profiles().count(), 1);
         assert_eq!(config.profiles[0].surface.as_str(), "x");
         assert_eq!(config.profiles[1].surface.as_str(), "reddit");
+        assert_eq!(
+            config.surface_setting("x", "client_id"),
+            Some("example-client")
+        );
+        assert_eq!(
+            config.surface_setting("x", "redirect_uri"),
+            Some("http://127.0.0.1:49152/oauth/x/callback")
+        );
     }
 
     #[test]
