@@ -445,10 +445,7 @@ fn oauth_credential_key(profile: &TrackedProfile) -> CredentialKey {
 fn x_oauth_config(config: &SociariumConfig) -> Result<(XOAuthConfig, String), Box<dyn Error>> {
     let client_id = required_surface_setting(config, "x", "client_id")?;
     let redirect_uri = required_surface_setting(config, "x", "redirect_uri")?.to_owned();
-    Ok((
-        XOAuthConfig::new(client_id, &redirect_uri)?,
-        redirect_uri,
-    ))
+    Ok((XOAuthConfig::new(client_id, &redirect_uri)?, redirect_uri))
 }
 
 fn required_surface_setting<'a>(
