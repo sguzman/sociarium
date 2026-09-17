@@ -98,6 +98,14 @@ This is not the normal login path and is never read from `sociarium.toml`. The C
 
 The override is useful for recovery, CI-like experiments, or environments where the native credential backend is unavailable. It does not change the security boundary: the environment value must never be persisted as corpus evidence.
 
+## Failed remote responses are diagnostics, not corpus evidence
+
+Successful social API response bodies selected by an adapter may be preserved as raw evidence. Failed OAuth/token or social-API response bodies are a different category: they are not automatically social evidence and can contain untrusted or sensitive text.
+
+For X M0, failed remote bodies are consumed only long enough to derive a small safe diagnostic category. Error values retain the HTTP status plus a static category such as `invalid_grant`, `rate_limit`, `payment_required`, or a status-class fallback. Raw `error_description`, `detail`, arbitrary `title`, and other remote free text are not retained or emitted through normal error formatting.
+
+This makes pasteable CLI errors safe by construction rather than depending on X never echoing credentials, authorization material, or private response data.
+
 ## Raw evidence is not credential storage
 
-Preserving raw API response bodies is part of Sociarium's provenance model. HTTP request headers, authorization callbacks, OAuth token responses, and credential-store contents are not raw social evidence and must not be archived with social API responses.
+Preserving successful raw social API response bodies is part of Sociarium's provenance model. HTTP request headers, authorization callbacks, OAuth token responses, failed remote protocol bodies, and credential-store contents are not raw social evidence and must not be archived with social API responses.
