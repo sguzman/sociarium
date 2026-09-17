@@ -15,6 +15,19 @@ The generic runner follows this order for every page:
 
 The cursor is intentionally opaque outside the adapter. Core synchronization code must not parse surface-specific cursor contents.
 
+## Bootstrap coverage is not lifetime completeness
+
+A first synchronization can only acquire history that the remote surface currently exposes. Durable local preservation does not imply unlimited retrospective remote access.
+
+For X M0, `/2/users/:id/tweets` exposes a bounded recent user-post timeline (currently approximately the most recent 3,200 Posts). Therefore:
+
+- the first X traversal bootstraps the retrievable recent window, not necessarily the profile's complete lifetime history;
+- a terminal first traversal means Sociarium exhausted the currently exposed timeline window, not that no older Posts have ever existed;
+- once the initial traversal completes, the durable `since_id` high-water mark supports forward incremental continuity;
+- later X archive-import or broader historical-acquisition paths can add older evidence without redefining existing acquisitions.
+
+Coverage limits belong to adapter/source provenance and must not be hidden behind a generic claim such as "account fully archived."
+
 ## Pagination is not incremental state
 
 A remote pagination token answers: "where is the next page of this traversal?"
@@ -70,6 +83,8 @@ sociarium sync x-main --no-index
 ```
 
 A successful sync rebuilds the disposable search index unless `--no-index` is supplied.
+
+The real X M0 command path is currently held behind the pre-live issues tracked from #1; in particular #5 must correct the live timeline wire request before the deliberate smoke run.
 
 ## Failure rules
 
