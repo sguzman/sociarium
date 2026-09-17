@@ -6,6 +6,7 @@ members = [
   "crates/sociarium-adapter-x",
   "crates/sociarium-config",
   "crates/sociarium-store",
+  "crates/sociarium-sync",
   "crates/sociarium-search",
   "crates/sociarium-cli",
 ]
