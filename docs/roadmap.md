@@ -17,17 +17,33 @@ configured X profile
   -> query from CLI
 ```
 
+Repository implementation status: complete. The remaining M0 gate is one live end-to-end smoke test with a registered X Developer App and authorized account, exercising native login, persisted credentials, acquisition, durable sync state, index rebuild, and local query against real remote data.
+
+Current M0 implementation includes:
+
+- generic profile and per-surface non-secret configuration;
+- native OAuth2 Authorization Code + PKCE for X;
+- profile-scoped Windows Credential Manager persistence;
+- refresh-token rollover and automatic refresh before sync;
+- direct Rust X API acquisition;
+- raw + normalized acquisition bundles;
+- durable incremental/cursor state with crash recovery;
+- rebuildable SQLite/FTS index;
+- CLI auth, sync, list, and search commands;
+- Linux stable, native Windows, and Rust 1.85 CI coverage.
+
 Explicitly not M0: posting, deleting, arbitrary public-X search, GUI, MCP, cross-platform identity resolution, additional adapters.
 
 ## M1 — X corpus depth
 
 - replies/quotes/reposts where available;
-- profile snapshots/history;
+- richer profile snapshots/history;
 - likes/bookmarks for authenticated owned profiles where API access permits;
 - following/follower observations;
-- stronger incremental sync/cursor recovery;
+- more sync diagnostics and recovery tooling;
 - media metadata and optional acquisition;
-- corpus migrations/schema versioning.
+- corpus migrations/schema versioning;
+- import/bootstrap paths for existing X archives if useful.
 
 ## M2 — Agent surface
 
