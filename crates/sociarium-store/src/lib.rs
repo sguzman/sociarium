@@ -714,6 +714,7 @@ pub enum StoreError {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use std::fs::OpenOptions;
 
     use chrono::{TimeZone, Utc};
     use sociarium_adapter::RawEvidence;
@@ -754,17 +755,29 @@ mod tests {
         }
     }
 
-    fn batch(raw_path: &str) -> SyncBatch {
+    fn unbound_profile() -> TrackedProfile {
+        let mut profile = profile();
+        profile.remote_id = None;
+        profile
+    }
+
+    fn batch_for(
+        raw_path: &str,
+        remote_id: &str,
+        handle: &str,
+        acquisition_id: &str,
+        hour: u32,
+    ) -> SyncBatch {
         let observation = ObservationMeta {
             surface: SurfaceId::new("x").unwrap(),
-            observed_at: Utc.with_ymd_and_hms(2026, 9, 17, 14, 0, 0).unwrap(),
-            acquisition_id: "acq-001".to_owned(),
+            observed_at: Utc.with_ymd_and_hms(2026, 9, 17, hour, 0, 0).unwrap(),
+            acquisition_id: acquisition_id.to_owned(),
             schema_version: 1,
         };
         let record = NormalizedRecord::ProfileSnapshot(ProfileSnapshot {
             profile_id: ProfileId::new("x-main").unwrap(),
-            remote_id: RemoteId::new("6679733").unwrap(),
-            handle: Some("sguzman".to_owned()),
+            remote_id: RemoteId::new(remote_id).unwrap(),
+            handle: Some(handle.to_owned()),
             display_name: Some("Salvador".to_owned()),
             bio: None,
             avatar_url: None,
@@ -777,11 +790,15 @@ mod tests {
             records: vec![record],
             raw: vec![RawEvidence {
                 media_type: "application/json".to_owned(),
-                bytes: br#"{"data":{"id":"6679733"}}"#.to_vec(),
+                bytes: format!(r#"{{"data":{{"id":"{remote_id}"}}}}"#).into_bytes(),
                 suggested_path: Some(raw_path.to_owned()),
             }],
             next_cursor: Some("NEXT-PAGE".to_owned()),
         }
+    }
+
+    fn batch(raw_path: &str) -> SyncBatch {
+        batch_for(raw_path, "6679733", "sguzman", "acq-001", 14)
     }
 
     #[test]
@@ -875,6 +892,134 @@ mod tests {
         let recovered = store.profile_state(&profile).unwrap().unwrap();
         assert_eq!(recovered.cursor.as_deref(), Some("NEXT-PAGE"));
         assert_eq!(recovered.last_acquisition_id, "acq-001");
+    }
+
+    #[test]
+    fn reconstructs_binding_and_accepts_handle_change_for_same_remote_id() {
+        let temp = TempCorpus::new("binding");
+        let store = CorpusStore::open(&temp.0).unwrap();
+        let profile = unbound_profile();
+
+        assert_eq!(
+            store.profile_binding(&profile).unwrap(),
+            ProfileBinding::Unbound
+        );
+
+        store
+            .persist_sync_batch(
+                &profile,
+                &batch_for("api/me-1.json", "6679733", "old-handle", "acq-001", 14),
+            )
+            .unwrap();
+        assert_eq!(
+            store.profile_binding(&profile).unwrap(),
+            ProfileBinding::Bound(RemoteId::new("6679733").unwrap())
+        );
+
+        store
+            .persist_sync_batch(
+                &profile,
+                &batch_for("api/me-2.json", "6679733", "new-handle", "acq-002", 15),
+            )
+            .unwrap();
+        assert_eq!(
+            store.profile_binding(&profile).unwrap(),
+            ProfileBinding::Bound(RemoteId::new("6679733").unwrap())
+        );
+    }
+
+    #[test]
+    fn persistence_rejects_remote_identity_change_before_commit() {
+        let temp = TempCorpus::new("binding-mismatch");
+        let store = CorpusStore::open(&temp.0).unwrap();
+        let profile = unbound_profile();
+
+        store
+            .persist_sync_batch(
+                &profile,
+                &batch_for("api/me-1.json", "6679733", "sguzman", "acq-001", 14),
+            )
+            .unwrap();
+
+        let error = store
+            .persist_sync_batch(
+                &profile,
+                &batch_for("api/me-2.json", "999999", "other", "acq-002", 15),
+            )
+            .unwrap_err();
+        assert!(matches!(error, StoreError::ProfileRemoteIdMismatch { .. }));
+
+        let completed = fs::read_dir(store.layout().acquisition_profile_dir(&profile))
+            .unwrap()
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+            .count();
+        assert_eq!(completed, 1);
+    }
+
+    #[test]
+    fn configured_remote_id_must_agree_with_durable_binding() {
+        let temp = TempCorpus::new("configured-binding-mismatch");
+        let store = CorpusStore::open(&temp.0).unwrap();
+        let unbound = unbound_profile();
+
+        store
+            .persist_sync_batch(
+                &unbound,
+                &batch_for("api/me-1.json", "6679733", "sguzman", "acq-001", 14),
+            )
+            .unwrap();
+
+        let mut configured = unbound.clone();
+        configured.remote_id = Some(RemoteId::new("999999").unwrap());
+        let error = store
+            .persist_sync_batch(
+                &configured,
+                &batch_for("api/me-2.json", "999999", "other", "acq-002", 15),
+            )
+            .unwrap_err();
+
+        assert!(matches!(
+            error,
+            StoreError::ConfiguredRemoteIdConflict { .. }
+        ));
+    }
+
+    #[test]
+    fn contradictory_durable_profile_snapshots_are_reported_as_conflicted() {
+        let temp = TempCorpus::new("binding-conflict");
+        let store = CorpusStore::open(&temp.0).unwrap();
+        let profile = unbound_profile();
+        let persisted = store
+            .persist_sync_batch(
+                &profile,
+                &batch_for("api/me-1.json", "6679733", "sguzman", "acq-001", 14),
+            )
+            .unwrap();
+
+        let conflicting = batch_for("unused.json", "999999", "other", "acq-001", 14)
+            .records
+            .into_iter()
+            .next()
+            .unwrap();
+        let records_path = persisted
+            .acquisition_dir
+            .join("normalized")
+            .join("records.jsonl");
+        let mut file = OpenOptions::new().append(true).open(records_path).unwrap();
+        serde_json::to_writer(&mut file, &conflicting).unwrap();
+        file.write_all(b"\n").unwrap();
+
+        let ProfileBinding::Conflicted(remote_ids) = store.profile_binding(&profile).unwrap() else {
+            panic!("expected conflicted profile binding");
+        };
+        assert_eq!(
+            remote_ids,
+            vec![
+                RemoteId::new("6679733").unwrap(),
+                RemoteId::new("999999").unwrap()
+            ]
+        );
     }
 
     #[test]
