@@ -54,17 +54,16 @@ M0 is one vertical slice:
 
 `configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
 
-The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. Issue #5 is complete; M0 is **not repository-complete** while the remaining pre-live issues #2–#4 and #6–#7 remain open.
+The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. Issues #4 and #5 are complete; M0 is **not repository-complete** while the remaining pre-live issues #2–#3 and #6–#7 remain open.
 
 ### Current implementation queue
 
 Implement bounded issues from the repository rather than asking the human principal to relay prompts between agents. Preferred order:
 
-1. **#4 — safe X remote failure diagnostics.** Stop emitting arbitrary raw OAuth/API failure bodies while preserving useful structured status/category information.
-2. **#3 — resilient OAuth loopback callback.** Add bounded waiting and tolerate unrelated local requests without weakening state/error validation.
-3. **#6 — separate Git-safe corpus initialization.** Establish the operator corpus as a dedicated durable directory/repository, protect disposable/pending state from accidental Git history, and keep software source separate from social data.
-4. **#7 — stable remote profile binding.** Establish/recover a durable surface + remote-ID binding for each local profile, prevent credential swaps from silently changing identity, and keep handles mutable after binding.
-5. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus/profile-binding boundaries into a no-network readiness check safe to paste into issue evidence.
+1. **#3 — resilient OAuth loopback callback.** Add bounded waiting and tolerate unrelated local requests without weakening state/error validation.
+2. **#6 — separate Git-safe corpus initialization.** Establish the operator corpus as a dedicated durable directory/repository, protect disposable/pending state from accidental Git history, and keep software source separate from social data.
+3. **#7 — stable remote profile binding.** Establish/recover a durable surface + remote-ID binding for each local profile, prevent credential swaps from silently changing identity, and keep handles mutable after binding.
+4. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus/profile-binding boundaries into a no-network readiness check safe to paste into issue evidence.
 
 After each bounded issue:
 
