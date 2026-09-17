@@ -172,7 +172,7 @@ impl fmt::Debug for XOAuthSession {
         f.debug_struct("XOAuthSession")
             .field("state", &"[redacted]")
             .field("code_verifier", &"[redacted]")
-            .field("authorize_url", &self.authorize_url)
+            .field("authorize_url", &"[redacted query]")
             .finish()
     }
 }
@@ -419,6 +419,8 @@ mod tests {
         let rendered = format!("{session:?}");
         assert!(rendered.contains("[redacted]"));
         assert!(!rendered.contains(&session.code_verifier));
+        assert!(!rendered.contains(session.state()));
+        assert!(!rendered.contains("code_challenge="));
     }
 
     #[test]
