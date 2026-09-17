@@ -20,6 +20,7 @@ Real persistence pressure from the first X slice settled one important question:
 Conceptually an initialized corpus is:
 
 ```text
+sociarium-corpus.json      # versioned corpus-kind/schema marker
 sociarium.toml             # non-secret corpus/profile configuration; may be tracked deliberately
 .gitignore                 # corpus policy, not the software-source .gitignore
 acquisitions/
@@ -39,7 +40,25 @@ derived/
 indexes/
 ```
 
-The exact initialization/scaffolding behavior is tracked in issue #6. Until that is implemented, do not use the public software checkout's `corpus/` subdirectory for real account data merely because `cargo run` executes there.
+Create the boundary explicitly with:
+
+```text
+sociarium corpus init <path>
+```
+
+Initialization is local-only and Git-optional. It writes the versioned corpus marker, creates the durable directories, preserves any existing operator `.gitignore` rules, adds Sociarium's required ignore rules exactly once, and creates a non-secret `sociarium.toml` template when the CLI drives initialization.
+
+The default corpus ignore policy is:
+
+```text
+/indexes/
+/derived/
+**/.pending-*/
+```
+
+Completed `acquisitions/`, recoverable `state/`, the corpus marker, and non-secret corpus configuration remain Git-visible by default. `derived/` is ignored in M0 because it is explicitly rebuildable projection state rather than canonical evidence.
+
+Initialization is idempotent for an already compatible marked corpus. An unrelated non-empty directory is rejected rather than silently adopted or overwritten. A `.git` directory and operator `.gitignore` may already exist, but Sociarium never requires Git to be installed and never commits or pushes automatically.
 
 Surface, profile, and acquisition identifiers are encoded into safe filesystem components by the store; their semantic values remain inside manifests/records.
 
