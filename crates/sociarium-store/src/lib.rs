@@ -701,9 +701,7 @@ pub enum StoreError {
         configured: String,
         durable: String,
     },
-    #[error(
-        "remote profile id mismatch for {profile_id}: expected={expected} actual={actual}"
-    )]
+    #[error("remote profile id mismatch for {profile_id}: expected={expected} actual={actual}")]
     ProfileRemoteIdMismatch {
         profile_id: String,
         expected: String,
@@ -1010,7 +1008,8 @@ mod tests {
         serde_json::to_writer(&mut file, &conflicting).unwrap();
         file.write_all(b"\n").unwrap();
 
-        let ProfileBinding::Conflicted(remote_ids) = store.profile_binding(&profile).unwrap() else {
+        let ProfileBinding::Conflicted(remote_ids) = store.profile_binding(&profile).unwrap()
+        else {
             panic!("expected conflicted profile binding");
         };
         assert_eq!(
