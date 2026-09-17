@@ -2,13 +2,13 @@
 
 This runbook is the final M0 validation gate. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
 
-> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issues #2–#6 remain open. Issue #5 is a confirmed X wire/data-fidelity blocker in the current timeline request, and #6 must establish the dedicated corpus boundary before real account data is written. This runbook describes the intended final procedure after those repository-side fixes are integrated and CI is green.
+> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issues #7 and #2 remain open. Issues #3–#6 are resolved; the remaining repository gates are stable remote-profile binding and the final profile-aware local preflight.
 
 Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw failed OAuth/API response bodies, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
 
 ## Preconditions
 
-- M0 pre-live issues #2–#6 are closed with their acceptance criteria satisfied.
+- M0 pre-live issues #7 and #2 are closed with their acceptance criteria satisfied.
 - Linux stable, native Windows, and Rust 1.85 locked CI are green on the exact `main` head being tested.
 - Windows is the test host.
 - The Sociarium **software source checkout** is on the current `main` branch.
@@ -44,15 +44,21 @@ C:\path\to\sociarium\          # software source checkout
 C:\path\to\my-social-corpus\  # operator-owned durable corpus
 ```
 
-Issue #6 owns the final initialization syntax. Once implemented, use that command to create/validate the corpus and its Git-safe ignore policy before the smoke run.
+Initialize the dedicated corpus before inserting real configuration or contacting X:
+
+```text
+cargo run -p sociarium-cli --locked -- corpus init <CORPUS_ROOT>
+```
+
+This creates the versioned corpus marker, durable layout, corpus-local Git ignore policy, and `<CORPUS_ROOT>/sociarium.toml` non-secret configuration template. The command does not initialize Git, commit, or push; Git remains optional history/transport. Re-running initialization on a compatible corpus is safe, while an unrelated non-empty target is rejected.
 
 If the corpus is pushed to a remote Git host, private visibility is the conservative default. The corpus must contain no credentials, but future authorized data can still be private even when it is not credential material.
 
-For the rest of this runbook, call the resulting paths:
+For the rest of this runbook:
 
 ```text
-<CORPUS_ROOT>
-<CORPUS_CONFIG>
+<CORPUS_ROOT>   = the initialized dedicated corpus directory
+<CORPUS_CONFIG> = <CORPUS_ROOT>/sociarium.toml
 ```
 
 The config may be tracked in the dedicated corpus if that is the initialized corpus policy; it still must not contain bearer credentials or client secrets.
