@@ -121,10 +121,7 @@ impl SocialAdapter for XAdapter {
         );
 
         let newest_id = newest_post_id(
-            cursor
-                .newest_id
-                .as_deref()
-                .or(cursor.since_id.as_deref()),
+            cursor.newest_id.as_deref().or(cursor.since_id.as_deref()),
             posts.value.data.iter().map(|post| post.id.as_str()),
         )?;
         let pagination_token = posts.value.meta.next_token.clone();
@@ -193,8 +190,8 @@ fn parse_cursor(value: Option<&str>) -> Result<XSyncCursor, String> {
     let Some(value) = value else {
         return Ok(XSyncCursor::default());
     };
-    let cursor: XSyncCursor =
-        serde_json::from_str(value).map_err(|error| format!("invalid X sync cursor JSON: {error}"))?;
+    let cursor: XSyncCursor = serde_json::from_str(value)
+        .map_err(|error| format!("invalid X sync cursor JSON: {error}"))?;
     if cursor.version != X_CURSOR_VERSION {
         return Err(format!(
             "unsupported X sync cursor version {}; expected {}",
@@ -205,10 +202,10 @@ fn parse_cursor(value: Option<&str>) -> Result<XSyncCursor, String> {
         ("since_id", cursor.since_id.as_deref()),
         ("newest_id", cursor.newest_id.as_deref()),
     ] {
-        if let Some(id) = id
-            && !is_snowflake(id)
-        {
-            return Err(format!("invalid X cursor {name}: {id}"));
+        if let Some(id) = id {
+            if !is_snowflake(id) {
+                return Err(format!("invalid X cursor {name}: {id}"));
+            }
         }
     }
     if cursor
@@ -233,7 +230,9 @@ fn newest_post_id<'a>(
     let mut newest = current.map(str::to_owned);
     for id in ids {
         if !is_snowflake(id) {
-            return Err(AdapterError::Data(format!("invalid X post id in response: {id}")));
+            return Err(AdapterError::Data(format!(
+                "invalid X post id in response: {id}"
+            )));
         }
         let replace = newest
             .as_deref()
@@ -246,9 +245,7 @@ fn newest_post_id<'a>(
 }
 
 fn compare_numeric_strings(left: &str, right: &str) -> Ordering {
-    left.len()
-        .cmp(&right.len())
-        .then_with(|| left.cmp(right))
+    left.len().cmp(&right.len()).then_with(|| left.cmp(right))
 }
 
 fn is_snowflake(value: &str) -> bool {
@@ -292,7 +289,7 @@ mod tests {
     }
 
     #[test]
-    fn X_cursor_distinguishes_pagination_from_terminal_high_water() {
+    fn x_cursor_distinguishes_pagination_from_terminal_high_water() {
         let adapter = XAdapter::new();
         let paging = XSyncCursor {
             version: X_CURSOR_VERSION,
@@ -307,7 +304,11 @@ mod tests {
             newest_id: Some("150".to_owned()),
         };
 
-        assert!(adapter.cursor_has_more(Some(&encode_cursor(&paging).unwrap())).unwrap());
+        assert!(
+            adapter
+                .cursor_has_more(Some(&encode_cursor(&paging).unwrap()))
+                .unwrap()
+        );
         assert!(
             !adapter
                 .cursor_has_more(Some(&encode_cursor(&terminal).unwrap()))
