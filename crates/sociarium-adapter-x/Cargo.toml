@@ -10,6 +10,10 @@ repository.workspace = true
 async-trait.workspace = true
 base64.workspace = true
 chrono.workspace = true
+# Compatibility/backend-selection dependency: `url` -> `idna` intentionally
+# permits any idna_adapter 1.x. Keeping this exact dependency here selects the
+# unicode-rs backend for the network stack and avoids accidental ICU4X/MSRV drift.
+idna_adapter.workspace = true
 rand.workspace = true
 reqwest.workspace = true
 serde.workspace = true
