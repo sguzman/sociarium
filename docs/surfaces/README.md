@@ -47,6 +47,15 @@ These surfaces have been explicitly added by the human principal as **low-priori
 | Wikipedia | low / queued | not started |
 | TikTok | low / queued | not started |
 | Pinterest | low / queued | not started |
+| Substack | low / queued | not started |
+| Medium | low / queued | not started |
+| Wattpad | low / queued | not started |
+| SoundCloud | low / queued | not started |
+| Sketchfab | low / queued | not started |
+| Tumblr | low / queued | not started |
+| Royal Road | low / queued | not started |
+| Ream | low / queued | not started |
+| DeviantArt | low / queued | not started |
 
 Queued surfaces should remain dormant until the human principal promotes one or the active research plan reaches them naturally. The queue exists so these sites are remembered without expanding current scope.
 
