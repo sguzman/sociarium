@@ -1,6 +1,6 @@
 # X direct first-party observation plan
 
-Status: planned, not yet executed.
+Status: active under issue #12; awaiting first operator capture.
 
 Purpose: convert public reverse-engineering claims into **dated Sociarium observations** of the first-party X web client used by the operator's own authorized account.
 
@@ -91,6 +91,12 @@ For timeline-like sources, determine:
 - whether older history eventually requires archive/export.
 
 Do not generate excessive traffic just to find a theoretical maximum. Research should be bounded and respectful.
+
+## Capture procedure
+
+Use [capture-protocol.md](capture-protocol.md) for the operator workflow and [capture-sanitization.md](capture-sanitization.md) for the public/private evidence boundary.
+
+Use [observations/TEMPLATE.md](observations/TEMPLATE.md) for each sanitized finding.
 
 ## Deliverables
 
