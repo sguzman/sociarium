@@ -2,13 +2,13 @@
 
 This runbook is the final M0 validation gate. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
 
-> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issues #7 and #2 remain open. Issues #3–#6 are resolved; the remaining repository gates are stable remote-profile binding and the final profile-aware local preflight.
+> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issue #2 remains open. Issues #3–#7 are resolved; the final repository gate is the profile-aware local preflight.
 
 Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw failed OAuth/API response bodies, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
 
 ## Preconditions
 
-- M0 pre-live issues #7 and #2 are closed with their acceptance criteria satisfied.
+- M0 pre-live issue #2 is closed with its acceptance criteria satisfied.
 - Linux stable, native Windows, and Rust 1.85 locked CI are green on the exact `main` head being tested.
 - Windows is the test host.
 - The Sociarium **software source checkout** is on the current `main` branch.
