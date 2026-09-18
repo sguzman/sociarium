@@ -6,9 +6,9 @@ Its long-term software goal is a Rust-native substrate that can preserve selecte
 
 > **Research the surface before implementing the adapter. The platform's preferred developer interface is not the ontology of the platform.**
 
-## Current phase: R0 — Surface Atlas
+## Current phase: R0 — Surface Inventory
 
-Implementation is intentionally frozen as the active priority.
+New surface-specific implementation is intentionally frozen. During R0, research and documentation are the active work; existing code may receive preservation/security/build fixes but does not define the agenda.
 
 The immediate project task is to enumerate the social surfaces the human principal actually cares about, then investigate each one before choosing more implementation targets.
 
@@ -22,10 +22,11 @@ For every surface, Sociarium asks:
 
 Research covers documented APIs, self-data APIs, official exports, public web representations, first-party private web/mobile protocols, live channels, identifiers, pagination/history limits, authentication, pricing, rate limits, portability, protocol drift, and per-data-class access.
 
-A high-quality dossier is a successful deliverable even if no adapter is ever written.
+A high-quality dossier is a successful deliverable even if no adapter is ever written. For some surfaces, documentation may remain more valuable than code indefinitely.
 
 Start here:
 
+- [Project charter](docs/project-charter.md)
 - [Surface Atlas](docs/surfaces/README.md)
 - [Surface research doctrine](docs/surface-research-doctrine.md)
 - [Surface access tiers](docs/surface-access-tiers.md)
@@ -143,6 +144,7 @@ The Surface Atlas continues to matter after implementation because access polici
 
 Research:
 
+- `docs/project-charter.md` — project purpose, progress model, and research-before-code constitution.
 - `docs/surfaces/` — per-surface atlas and dossiers.
 - `docs/surface-research-doctrine.md` — evidence/provenance and investigative rules.
 - `docs/surface-access-tiers.md` — Tier A/B/C/D definitions.
