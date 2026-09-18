@@ -35,6 +35,21 @@ The initial inventory is intentionally open-ended. New surfaces may be added lat
 
 X is currently the highest-priority research target. Its baseline dossier now establishes the documented API/export terrain, public technical evidence for the private web protocol, and current platform-policy constraints. Its Tier C classification remains provisional until direct first-party observation strengthens the undocumented-protocol evidence.
 
+## Queued surfaces
+
+These surfaces have been explicitly added by the human principal as **low-priority future research targets**. They are inventory entries only: no tier assignment, dossier, desk research, or implementation work is implied yet.
+
+| Surface | Operator priority | Research status |
+| --- | --- | --- |
+| GitHub | low / queued | not started |
+| Hugging Face | low / queued | not started |
+| Civitai | low / queued | not started |
+| Wikipedia | low / queued | not started |
+| TikTok | low / queued | not started |
+| Pinterest | low / queued | not started |
+
+Queued surfaces should remain dormant until the human principal promotes one or the active research plan reaches them naturally. The queue exists so these sites are remembered without expanding current scope.
+
 ## Adjacent site-specific projects
 
 Sociarium is not a generic reverse-engineering repository for every website the operator uses.
