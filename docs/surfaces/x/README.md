@@ -7,7 +7,7 @@
 - Last reviewed: 2026-09-18
 - Operator priority: **highest**
 - Overall access tier: **provisional Tier C — Adversarial**
-- Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, Likes, Bookmarks, Followers, and Following; other undocumented operation families remain medium-confidence until observed
+- Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, Likes, Bookmarks, Followers, Following, and Lists management; remaining undocumented operation families are medium-confidence until observed
 
 ## Executive summary
 
@@ -19,7 +19,7 @@ X separately offers an official account archive through normal account settings.
 
 X Help currently says the ordinary profile timeline displays up to 3,200 of the user's most recent posts and directs users to the archive for older history. The current official `GET /2/users/{id}/tweets` API reference does **not** state that same 3,200 ceiling. Sociarium therefore treats the current API historical ceiling as **unknown pending direct/official evidence** rather than inheriting an older assumption.
 
-Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`. Sociarium now has direct current observations for `UserOriginalsTimeline`, `UserByScreenName`, `TweetDetail`, `HomeTimeline`, `Likes`, `Bookmarks`, `Followers`, and `Following`, including timeline pagination, profile terminal-history behavior, and both one-page and multi-page relationship payloads. Lists and Notifications still rely on secondary evidence until directly observed.
+Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`. Sociarium now has direct current observations for `UserOriginalsTimeline`, `UserByScreenName`, `TweetDetail`, `HomeTimeline`, `Likes`, `Bookmarks`, `Followers`, `Following`, and `ListsManagementPageTimeline`, including timeline pagination, terminal-history behavior, relationship payloads, viewer-scoped list management, and partial GraphQL error handling. Notifications still rely on secondary evidence until directly observed.
 
 X's current Terms of Service expressly prohibit scraping and automated access through interfaces other than X's currently available published interfaces unless separately permitted. X's April 2026 Automation Rules also say not to use non-API automation such as scripting the X website. That creates a major implementation constraint even where the private protocol is technically observable.
 
@@ -126,6 +126,14 @@ Direct observation on 2026-09-18 found that the operator's profile Following vie
 The capture demonstrated real multi-page Bottom-cursor pagination. It also showed that `count=20` is not a strict page-size guarantee: each observed response contained 50 primary users.
 
 See [the Following observation](observations/2026-09-18-following.md).
+
+### Current Lists UI
+
+Direct observation on 2026-09-18 found that the operator's Lists page uses viewer-scoped GraphQL `ListsManagementPageTimeline` with no observed `userId` variable.
+
+The response separated **Discover new Lists** from **Your Lists** as distinct timeline modules and returned `TimelineTwitterList` objects with stable IDs and list-state fields. The same HTTP 200 response also carried recoverable field-level GraphQL errors for optional banner-media data, proving that non-empty `errors[]` can coexist with useful `data`.
+
+See [the Lists observation](observations/2026-09-18-lists.md).
 
 ## Current R2 status
 
