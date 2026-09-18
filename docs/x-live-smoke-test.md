@@ -9,6 +9,10 @@ Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw fail
 ## Preconditions
 
 - M0 pre-live issues #2–#7 are closed with their acceptance criteria satisfied.
+- Create/configure the X app in the current X Developer Console at `https://console.x.com`.
+- In the app's authentication settings, enable **OAuth 2.0** and select **Native App**. Native Apps are public clients: Sociarium uses PKCE and does not require or persist an X client secret.
+- In the app's callback URL allowlist, register the configured loopback URL **exactly**, including path and any trailing slash. For local development, use `http://127.0.0.1:<port>/...`, not `localhost`.
+- Copy only the OAuth 2.0 **Client ID** needed by Sociarium into the corpus configuration. API keys, OAuth 1.0a secrets, bearer tokens, and any confidential-client secret shown elsewhere in the Developer Console are not part of the M0 configuration path.
 - Linux stable, native Windows, and Rust 1.85 locked CI are green on the exact `main` head being tested.
 - Windows is the test host.
 - The Sociarium **software source checkout** is on the current `main` branch.
@@ -33,6 +37,29 @@ offline.access
 
 `offline.access` is required for a refresh token so later syncs can refresh without another interactive authorization.
 - For the first unbound `x-main` enrollment, configuration contains either the intended stable `remote_id` or the intended X handle. The handle is only an enrollment guard; the remote numeric ID observed from `/users/me` becomes the durable identity after the first successful acquisition.
+
+## 0. Configure the X Developer App
+
+The current X Developer Console flow is:
+
+1. Sign in at `https://console.x.com`.
+2. Create an App if one does not already exist for Sociarium.
+3. Open the App's authentication settings and enable OAuth 2.0.
+4. Select **Native App**. This is the public-client shape intended for desktop/mobile applications that cannot keep a client secret.
+5. Register the exact callback URL that will appear in `sociarium.toml`, for example:
+
+```text
+http://127.0.0.1:49152/oauth/x/callback
+```
+
+6. Make sure the callback uses `127.0.0.1`, not `localhost`, and that path/trailing-slash spelling matches exactly.
+7. Copy the OAuth 2.0 **Client ID** from the App's keys/tokens area. Sociarium does not need a client secret for this Native App flow.
+8. Ensure the App can request the M0 scopes `tweet.read users.read offline.access`.
+9. Confirm the developer account/project has whatever current X API billing/credit/endpoint entitlement is required for the user-post reads exercised by M0.
+
+X currently documents OAuth 2.0 Authorization Code + PKCE for this flow. `offline.access` is required for a refresh token; without it, the access token is short-lived and the persistent refresh path cannot be validated.
+
+Do not copy Developer Console credentials into an issue or commit. The Client ID is non-secret application identification; bearer/user tokens, API secrets, and any client secret are authority-bearing credentials and do not belong in the corpus.
 
 ## 1. Initialize/select the dedicated corpus
 
