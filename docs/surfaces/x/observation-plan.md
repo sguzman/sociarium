@@ -1,6 +1,6 @@
 # X direct first-party observation plan
 
-Status: active under issue #12; awaiting first operator capture.
+Status: active under issue #12; first operator capture analyzed and recorded. Own-profile pagination/reload comparison and self-data views remain outstanding.
 
 Purpose: convert public reverse-engineering claims into **dated Sociarium observations** of the first-party X web client used by the operator's own authorized account.
 
@@ -100,9 +100,11 @@ Use [observations/TEMPLATE.md](observations/TEMPLATE.md) for each sanitized find
 
 ## Deliverables
 
-Direct observations should be appended under a future:
+Direct observations are stored under:
 
 `docs/surfaces/x/observations/YYYY-MM-DD-<topic>.md`
+
+First direct observation: [2026-09-18-profile-a.md](observations/2026-09-18-profile-a.md).
 
 Each observation should clearly say:
 
