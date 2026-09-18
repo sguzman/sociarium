@@ -19,6 +19,7 @@ sociarium-config = { path = "../sociarium-config" }
 sociarium-core = { path = "../sociarium-core" }
 sociarium-credentials = { path = "../sociarium-credentials" }
 sociarium-search = { path = "../sociarium-search" }
+sociarium-import-x-archive = { path = "../sociarium-import-x-archive" }
 sociarium-store = { path = "../sociarium-store" }
 sociarium-sync = { path = "../sociarium-sync" }
 tokio.workspace = true
