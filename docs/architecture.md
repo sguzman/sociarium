@@ -2,37 +2,78 @@
 
 ## Purpose
 
-Sociarium maintains a durable local corpus of deliberately selected social profiles across multiple remote social surfaces. It acquires remote observations, preserves evidence, normalizes genuinely shared concepts into a surface-independent model, and exposes that corpus through human and agent interfaces.
+Sociarium has two first-class planes:
 
-The center of the system is the corpus, not any particular remote API.
+1. a **knowledge plane** that forensically maps how social surfaces permit an authorized user to access and preserve their own data;
+2. a **software/corpus plane** that implements selected acquisition strategies and preserves acquired evidence locally.
+
+The Surface Atlas is not disposable planning material. It is durable project state and can remain valuable even for surfaces that never receive an adapter.
+
+The long-term software substrate maintains a durable local corpus of deliberately selected social profiles across multiple remote social surfaces. It acquires observations, preserves evidence, normalizes genuinely shared concepts into a surface-independent model, and exposes that corpus through human and agent interfaces.
+
+No particular remote API defines the project.
 
 ## System boundary
 
 ```text
-remote surfaces                 first-party exports
-    |                                  |
-    v                                  v
-surface adapters             archive/import sources
-    |                                  |
-    +-------------+--------------------+
-                  |
-                  +--> raw/source evidence
-                  |
-                  v
-             normalization
-    |
-    v
-durable corpus
-    |
-    +--> rebuildable indexes/search
-    +--> CLI
-    +--> MCP / agent views
-    +--> future UI / exports
+                 SOCIAL SURFACE
+                       |
+          +------------+------------+
+          |                         |
+          v                         v
+ documented interfaces      first-party clients
+ exports / public web       web / mobile / live channels
+          |                         |
+          +------------+------------+
+                       |
+                       v
+              SURFACE ATLAS RESEARCH
+       docs + observations + provenance
+                       |
+                       v
+        per-data-class access assessment
+                       |
+                       v
+             dated access tier
+                       |
+                       v
+        implementation admission decision
+                       |
+           +-----------+-----------+
+           |                       |
+        document only          implement source
+                                   |
+                  +----------------+----------------+
+                  |                                 |
+                  v                                 v
+          live surface adapter              archive/import source
+                  |                                 |
+                  +----------------+----------------+
+                                   |
+                                   v
+                           raw/source evidence
+                                   |
+                                   v
+                              normalization
+                                   |
+                                   v
+                             durable corpus
+                                   |
+                  +----------------+----------------+
+                  |                |                |
+                  v                v                v
+               search            CLI          agent/MCP views
 ```
 
-Remote surfaces own their live systems. Sociarium owns its acquired evidence and local representations. Credentials remain operational authority outside the corpus.
+The knowledge plane is upstream of new implementation.
 
-A social **surface** and an **acquisition source** are different concepts. X is the surface whether evidence arrived through the official API or X's account archive. See ADR 0006.
+A surface can stop at **document only**. That is not failure. The dossier may establish that access is too expensive, too brittle, too incomplete, or currently crosses a boundary Sociarium should not build around.
+
+Remote surfaces own their live systems. Sociarium owns its research record, acquired evidence, and local representations. Credentials remain operational authority outside both the public research corpus and the social-data corpus.
+
+A social **surface** and an **acquisition source** are different concepts. X is the surface whether evidence arrives through an official API, an account archive, public rendering, or an authorized first-party private protocol. See ADR 0006.
+
+Research-before-code and the Surface Atlas are architectural policy, not project-management preference. See ADR 0007.
 
 ## Core concepts
 
@@ -40,7 +81,30 @@ A social **surface** and an **acquisition source** are different concepts. X is 
 
 A remote social system such as X, Reddit, Bluesky, Mastodon, or YouTube.
 
-The core stores a stable `SurfaceId`, but surface-specific API types remain in adapter crates.
+A surface exists independently of any particular developer API. Its dossier may describe several acquisition mechanisms with very different access conditions.
+
+The software core stores a stable `SurfaceId`, but surface-specific protocol types remain outside the core.
+
+### Surface dossier
+
+A dated, provenance-heavy research record describing how an authorized user can access and preserve their own data on one surface.
+
+A dossier records documented interfaces, observed first-party behavior, exports, identifiers, pagination/history, cost, friction, authentication boundaries, protocol drift, per-data-class access, and explicit unknowns.
+
+Dossiers distinguish documented fact, direct observation, inference, and unknowns.
+
+### Access tier
+
+A dated summary of the access relationship:
+
+- Tier A — Sovereign-friendly;
+- Tier B — Workable;
+- Tier C — Adversarial;
+- Tier D — Inaccessible.
+
+The tier does not replace the detailed per-data-class access matrix.
+
+Tier C explicitly makes first-party private protocols a research target when sanctioned developer interfaces materially obstruct self-data access.
 
 ### Acquisition source
 
@@ -72,6 +136,9 @@ A statement that a remote surface returned or exhibited some state at a particul
 
 Sociarium distinguishes authority by layer:
 
+- official documentation is evidence of what the surface/operator currently claims;
+- dated direct observations are evidence of what a first-party client/export/protocol actually exhibited in that context;
+- inferences are interpretations and must remain labeled as such;
 - the original acquisition source is authoritative for the source material it supplied at acquisition/import time;
 - preserved raw/source evidence is authoritative for what Sociarium actually received;
 - normalized records are Sociarium's typed interpretation of that evidence;
@@ -80,11 +147,15 @@ Sociarium distinguishes authority by layer:
 
 The local corpus is the durable historical record after acquisition. This does not imply that the local state controls or overrides live remote state.
 
-## Read and write asymmetry
+## Research, read, and write asymmetry
 
-Local reads and analysis should be broad and cheap. Remote mutations should be explicit, separately authorized, auditable, and capability-scoped.
+Research and local analysis should be broad.
 
-M0 is read/acquisition only.
+Remote acquisition must respect the documented authorization boundary even when the acquisition source is an undocumented first-party protocol.
+
+Remote mutations should be explicit, separately authorized, auditable, and capability-scoped.
+
+The current project phase is research-first. New remote write work is not active.
 
 ## Dependency direction
 
@@ -122,6 +193,8 @@ The diagram is conceptual rather than a complete Cargo edge list. The important 
 
 Future MCP/agent crates should depend on corpus/query abstractions rather than becoming a prerequisite for core behavior.
 
+The Surface Atlas is deliberately not generated from adapter code. Research can precede, outlive, contradict, or decide against an implementation. Code may link back to dossier assumptions, but implementation is downstream of the knowledge plane.
+
 ## Toolchain and dependency resolution
 
 Sociarium declares Rust 1.85 as its minimum supported Rust version and uses Cargo resolver 3 so fresh dependency resolution honors that floor where upstream metadata permits it.
@@ -134,4 +207,10 @@ These are part of the architecture contract: dependency resolution or a dependen
 
 ## Non-goals
 
-Sociarium is not attempting to recreate social platforms. Recommendation feeds, ad systems, general-purpose public social search, notification ecosystems, or GUI clones are out of scope unless later justified by corpus acquisition/preservation/query needs.
+Sociarium is not attempting to recreate social platforms.
+
+The research program does not treat "adversarial" as permission for credential theft, impersonation, or defeating meaningful access controls to reach data the operator is not authorized to access.
+
+Recommendation feeds, ad systems, general-purpose public social search, notification ecosystems, or GUI clones are out of scope unless later justified by acquisition/preservation/query needs.
+
+Sociarium also does not assume every researched surface should receive code. Documentation-only outcomes are first-class.
