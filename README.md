@@ -19,7 +19,7 @@ The initial Surface Atlas inventory and baseline dossiers are complete for:
 
 New surface-specific implementation remains intentionally frozen. Existing code may receive preservation/security/build fixes, but unfinished adapter/importer work does not define the agenda.
 
-**R2 — direct first-party observation / adversarial protocol archaeology is active now.** X is first because it is the human principal's highest-priority surface.
+**R2 — direct first-party observation / adversarial protocol archaeology is active now.** X is first because it is the human principal's highest-priority surface. The first Edge/X profile capture has been analyzed and committed as a sanitized structural observation; own-profile pagination and the remaining self-data views are still outstanding.
 
 Active execution log: [R2/X — direct first-party observation of authorized web client](https://github.com/sguzman/sociarium/issues/12).
 
