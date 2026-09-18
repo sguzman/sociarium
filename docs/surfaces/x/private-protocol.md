@@ -75,7 +75,7 @@ After the first direct capture, Sociarium still has not directly established:
 - mature-account profile history depth and bounded terminal depth for `Likes` or `Bookmarks`;
 - bookmark-folder behavior;
 - DM protocol families;
-- live/push notification transport and the Mentions subview;
+- live/push notification transport;
 - rate-limit behavior and broader failure taxonomy beyond the directly observed partial-success Lists GraphQL field errors;
 - how often query IDs/features rotate in practice;
 - whether the current web client uses additional anti-automation proof beyond the reported transaction-ID layer.
@@ -102,7 +102,7 @@ Directly observed in Microsoft Edge 153:
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Mentions subview remain unobserved. The main Notifications stream is now directly observed as viewer-scoped `NotificationsTimeline` with `timeline_type=All`, heterogeneous timeline items, unread-state instructions, and cursor exhaustion by disappearance of the Bottom cursor. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper remains unobserved. The main Notifications and Mentions streams are both directly observed through viewer-scoped `NotificationsTimeline`, selected by `timeline_type=All` versus `timeline_type=Mentions`, with shared unread-state instructions and cursor-disappearance exhaustion semantics. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
@@ -166,9 +166,17 @@ This gives Sociarium a second directly observed terminal pattern: exhaustion can
 
 The stream is heterogeneous: `TimelineNotification` aggregate/action items coexist with ordinary `TimelineTweet` Post items. Responses also carried `TimelineClearEntriesUnreadState` and `TimelineMarkEntriesUnreadGreaterThanSortIndex` instructions. No separate read-state mutation was observed in the bounded page load.
 
-The Mentions subview remains separately unobserved.
-
 See [observations/2026-09-18-notifications-all.md](observations/2026-09-18-notifications-all.md).
+
+### Notifications — Mentions
+
+A later 2026-09-18 direct capture established that `/notifications/mentions` reuses the same `NotificationsTimeline` operation and dated query ID, changing the request selector to `timeline_type=Mentions`.
+
+The initial Mentions response contained four ordinary `TimelineTweet` items. All four directly referenced the operator through mention entities and reply linkage. A second request reused the previous Bottom cursor and returned zero content with no Bottom cursor, matching the All stream's cursor-disappearance terminal pattern.
+
+The Mentions route also triggered a simultaneous `timeline_type=All` request, demonstrating that route-level traffic can include adjacent/preloaded notification streams and must be disambiguated by request variables rather than page URL alone.
+
+See [observations/2026-09-18-notifications-mentions.md](observations/2026-09-18-notifications-mentions.md).
 
 ## Technical promise
 
