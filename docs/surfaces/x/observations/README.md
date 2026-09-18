@@ -44,6 +44,10 @@ Never commit:
 6. Update the main X dossier if direct observation changes a baseline claim.
 7. Preserve disagreements rather than rewriting history.
 
+## Recorded observations
+
+- [2026-09-18 profile/timeline capture A](2026-09-18-profile-a.md) — first direct Edge/X observation; confirms current profile/detail operations, identity fields, reply/quote and `note_tweet` structures; own-profile pagination remains incomplete.
+
 ## Naming
 
 Use:
