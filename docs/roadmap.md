@@ -1,190 +1,158 @@
 # Roadmap
 
-Sociarium is now research-first.
+Sociarium is now a **documentation-first digital-forensics and social-surface access project**.
 
-The project does not treat implementation velocity as its primary measure of progress. Documentation, provenance, surface access mapping, and protocol archaeology are first-class deliverables.
+Code is downstream of research. The project does not measure progress primarily by adapter count.
+
+The durable research program is the [Surface Atlas](surfaces/README.md).
 
 ## R0 — Surface inventory
 
-**Current phase.**
+**Active milestone. No new surface-specific implementation.**
 
 Goal: enumerate the social surfaces the human principal actually cares about.
 
-Deliverables:
+The human principal supplies the list. Do not pad the inventory with fashionable or obvious sites merely to create work.
 
-- an explicit surface inventory under `docs/surfaces/`;
-- no speculative padding with platforms the operator did not ask to investigate;
-- a provisional research status for each surface;
-- any immediately known constraints recorded as provisional rather than silently treated as final.
+For each named surface, record only enough initial metadata to establish a research queue:
 
-Implementation policy:
+- surface name;
+- canonical domain/operator;
+- why it matters to the operator;
+- whether an existing Sociarium integration/research artifact already exists;
+- current research status;
+- provisional tier only when evidence already supports one.
 
-- no new surface-specific adapter/importer work during R0;
-- preserve existing code and keep it buildable;
-- do not invent implementation tasks merely to maintain coding momentum.
+R0 is complete when the initial inventory exists and the human principal agrees that it reflects the sites worth investigating.
 
-R0 completes when the principal's initial surface list has been captured and the research queue is explicit.
+**R0 is not complete because code was written.**
 
-## R1 — Surface dossiers
+## R1 — Surface Atlas baseline dossiers
 
-Goal: produce healthy, abundant, provenance-heavy documentation for the surfaces in the inventory.
+Investigate each R0 surface using the [research doctrine](surface-research-doctrine.md) and [access tiers](surface-access-tiers.md).
 
-For each surface, investigate:
+Every baseline dossier should establish, as far as evidence permits:
 
-- documented/public APIs;
-- authenticated self-data APIs;
-- official exports/archives;
-- public web access;
-- first-party private web/mobile protocols where warranted;
-- stable identifiers;
-- pagination/history windows;
-- edits/deletions;
-- media;
+- documented public and authenticated APIs;
+- official export/archive mechanisms;
+- public web representations;
+- first-party private web/mobile protocol surface;
+- stable profile/object identifiers;
+- authentication boundaries;
+- pagination and historical windows;
+- edit/deletion semantics;
+- media behavior;
+- follows/relationships;
 - likes/reactions;
 - bookmarks/saves;
-- follows/followers;
 - lists/collections;
-- private messages when authorized and relevant;
-- live-update channels;
-- authentication boundaries;
-- rate limits;
-- pricing/billing;
-- portability;
-- incremental acquisition;
+- private messages where relevant and authorized;
+- live channels such as WebSocket/SSE/push;
+- monetary cost;
+- non-monetary friction;
+- rate/automation limits;
+- incremental synchronization potential;
 - historical completeness;
-- protocol drift.
+- protocol volatility;
+- explicit unknowns.
 
-Each dossier should distinguish documented fact, direct observation, inference, and unknowns.
+Each dossier gets:
 
-### R1 acceptance
+1. a dated overall access tier;
+2. a per-data-class access matrix;
+3. evidence provenance;
+4. acquisition candidates;
+5. an implementation-admission recommendation, which may be **do not implement**.
 
-A surface dossier is mature enough for classification when it contains:
+Documentation alone is a valid completed result.
 
-- a dated executive summary;
-- an access matrix by data class and acquisition mechanism;
-- cost/friction analysis;
-- stable-identity notes;
-- acquisition candidates;
-- explicit unknowns;
-- provenance for material claims.
+## R2 — Adversarial protocol archaeology
 
-Research may conclude that a surface should not be implemented.
+For Tier C surfaces, investigate the protocol actually shipped to the authorized user when sanctioned developer interfaces are materially inadequate.
 
-## R2 — Tiering and comparative Surface Atlas
+Research may include:
 
-Goal: compare surfaces without collapsing important differences.
-
-Overall tiers:
-
-- **Tier A — Sovereign-friendly**
-- **Tier B — Workable**
-- **Tier C — Adversarial**
-- **Tier D — Inaccessible**
-
-A tier is a dated summary of the access relationship, not a rating of the platform itself.
-
-Per-data-class exceptions remain explicit. A site may be workable for public posts and adversarial for bookmarks or message history.
-
-### Adversarial research track
-
-Tier C activates protocol archaeology.
-
-When sanctioned interfaces materially obstruct self-data access, Sociarium investigates the first-party client protocol as evidence, including:
-
-- endpoints/operations;
-- request and response schemas;
-- pagination;
-- stable IDs;
+- first-party web request families;
+- GraphQL/RPC operation names;
+- endpoint structure;
+- request/response schemas;
 - feature flags;
-- auth/session boundaries;
-- WebSocket/SSE/live channels;
-- change history.
+- stable identifiers;
+- pagination cursors;
+- history/backfill behavior;
+- authenticated session boundaries;
+- live channels;
+- error forms;
+- dated protocol drift.
 
-This does not authorize credential theft, impersonation, or defeating meaningful access controls.
+This phase is **not** a mandate to bypass meaningful authorization/security boundaries.
 
-## R3 — Implementation admission
+Raw HAR files, cookies, bearer tokens, private messages, and other sensitive captures stay out of the public repository. Public dossiers preserve sanitized structural findings and provenance.
 
-Goal: decide which researched acquisition sources deserve code.
+R2 can conclude that a surface remains impractical or should stay documentation-only.
 
-A new surface-specific implementation should normally require:
+## R3 — Comparative access atlas
 
-- current dossier;
-- dated tier assessment;
-- per-data-class access matrix;
-- authentication model;
-- cost model;
-- stable IDs;
-- history/pagination behavior;
-- protocol volatility notes;
-- explicit acquisition-source choice;
-- rationale for why implementation is worthwhile.
+Once several dossiers exist, maintain a cross-surface matrix covering at least:
 
-Possible outcomes include:
+- overall tier;
+- per-data-class accessibility;
+- free versus paid self-data access;
+- historical completeness;
+- incremental sync;
+- export quality;
+- stable identifiers;
+- private-protocol availability;
+- protocol volatility;
+- recurring manual friction.
 
-- implement documented API adapter;
-- implement archive/import bootstrap;
-- implement an authorized private-protocol adapter;
-- combine multiple acquisition sources;
-- defer;
-- document only.
+The purpose is to make platform dependence visible and comparable rather than rediscovering constraints one integration at a time.
 
-**“Do not implement” is a valid outcome.**
+## I0 — Implementation admission
 
-## M0 — First post-atlas implementation target
+Implementation resumes only after research identifies a worthwhile acquisition target.
 
-Only after R0–R3 produce an implementation admission decision should Sociarium resume active surface-specific implementation.
+Before new surface-specific code begins, the chosen surface/source should have a current dossier that answers:
 
-The exact target is intentionally **not predetermined**.
+- why this acquisition source is preferable;
+- what data classes it can retrieve;
+- what it costs;
+- what authorization it needs;
+- what history it exposes;
+- what stable IDs it exposes;
+- what protocol assumptions may rot;
+- what alternatives were rejected and why.
 
-The existing X work does not automatically win this slot merely because it already has code.
+The human principal may deliberately override this gate. Agents may not silently bypass it to maintain coding velocity.
 
-M0 should prove that the research process can drive a technically useful acquisition path into the existing durable corpus substrate.
+## Existing implementation substrate
 
-## M1 — Corpus depth and cross-source reconciliation
+The pre-Atlas Rust work remains valuable and preserved:
 
-After a post-atlas vertical slice is proven:
+- surface-independent profile/Post ontology;
+- source-neutral acquisition envelopes;
+- durable raw + normalized evidence;
+- stable remote-profile binding;
+- rebuildable SQLite/FTS search;
+- profile-scoped synchronization;
+- Windows credential storage;
+- direct Rust X OAuth2/PKCE + API support;
+- partial X archive import work.
 
-- richer object semantics;
-- reconciliation of observations from multiple acquisition sources for one surface;
-- media metadata/acquisition where justified;
-- historical snapshots;
-- edit/deletion observations;
-- relationship/history depth;
-- schema migrations.
+The official X API candidate remains frozen on `m0-rc1`.
 
-## M2 — Agent surface
+The X archive importer is **not an active milestone**. It is preserved implementation work that may be resumed later if the X dossier identifies archive ingestion as a useful acquisition source.
 
-- semantic read-only MCP interface over the local corpus;
-- evidence/provenance retrieval;
-- bounded context/export views;
-- no arbitrary SQL/shell escape hatch.
+## Later software milestones
 
-## M3 — Cross-surface identity and analysis
+Only after the research program has admitted implementation targets:
 
-- explicit entities/personas/projects;
-- evidence-backed links between remote profiles;
-- cross-surface queries;
-- longitudinal comparisons;
-- corpus-level derived views.
+- additional live adapters/importers;
+- richer cross-surface identity analysis;
+- semantic MCP/agent interfaces over the local corpus;
+- media acquisition;
+- scheduled synchronization;
+- user interfaces;
+- explicit remote-write capabilities.
 
-## Existing pre-atlas implementation
-
-Before ADR 0007, Sociarium built substantial X-oriented infrastructure:
-
-- official X OAuth2/PKCE + API adapter;
-- Windows credential persistence;
-- profile binding;
-- durable acquisition bundles;
-- sync/checkpoint machinery;
-- search/indexing;
-- partial X archive-import work.
-
-That work remains preserved and useful.
-
-It is not deleted, and it is not the active roadmap.
-
-The official API candidate is preserved on `m0-rc1`. Archive-import work on `main` is frozen pending Surface Atlas research. Neither is allowed to define the next milestone by inertia.
-
-## Permanent rule
-
-**Research chooses implementation. Implementation does not choose the research agenda.**
+These are intentionally subordinate to the Surface Atlas. A well-researched surface with no adapter can be more valuable to Sociarium than a hastily implemented integration.
