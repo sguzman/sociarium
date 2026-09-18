@@ -25,6 +25,23 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 13. MCP is an external projection/interface. Core behavior must not depend on MCP.
 14. Remote writes are a separate capability boundary from local reads and should be conspicuous and auditable.
 15. Do not silently edit user goals/prompts into a different task. If implementation pressure reveals a design conflict, record the conflict and surface it.
+16. **Research before new surface-specific code.** A new adapter/importer/private-protocol implementation normally requires a current Surface Atlas dossier and an explicit implementation-admission decision.
+17. Documentation-only outcomes are valid. Do not manufacture implementation work merely to preserve coding momentum.
+18. Tier C — Adversarial means protocol archaeology is a legitimate research task when sanctioned interfaces materially obstruct self-data access. It does not authorize credential theft, impersonation, or bypassing meaningful authorization controls.
+
+## Research rules
+
+- The Surface Atlas is first-class project state, not disposable planning material.
+- For material surface claims, distinguish documented fact, direct observation, inference, and unknown.
+- Date private/undocumented protocol observations. Do not rewrite a historical observation into an eternal claim when the remote system changes.
+- Investigate access per data class; do not let one overall tier hide different conditions for posts, likes, bookmarks, relationships, media, or messages.
+- Record monetary cost and recurring manual friction explicitly.
+- The official API is one acquisition source, not the definition of a surface.
+- On adversarial surfaces, the authorized first-party web/mobile client may be treated as protocol evidence.
+- Do not commit live cookies, authorization headers, bearer/refresh tokens, passwords, private HAR captures, or other authority-bearing secrets to this public repository.
+- Sanitized endpoint/operation/schema/pagination observations are preferred for public dossiers.
+- Before proposing implementation, document the exact acquisition source being recommended and why it is preferable to the alternatives.
+- The human principal supplies the surfaces they care about. Do not pad the active research inventory with unrelated platforms merely to make it look comprehensive.
 
 ## Engineering rules
 
@@ -50,26 +67,47 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 
 ## Current milestone
 
-M0 is now the **zero-cost X archive vertical slice** tracked in issue #8.
+The active phase is **R0 — Surface inventory**.
 
-Hard constraint: do not require paid X API credits for M0. The official API backend is already implemented and preserved as an optional paid integration; do not make the human principal fund it merely to finish M0.
+Sociarium is documentation-first during this phase.
 
-Target:
+### Immediate goal
 
-`X account archive -> archive importer -> raw/source evidence -> normalized self-owned profile + Posts -> durable corpus -> stable profile binding -> rebuildable query index -> CLI query`
+The human principal will enumerate the social surfaces they care about. Capture that list under `docs/surfaces/`, then investigate those surfaces according to:
 
-### Current implementation queue
+- `docs/surface-research-doctrine.md`;
+- `docs/surface-access-tiers.md`;
+- `docs/surfaces/TEMPLATE.md`;
+- ADR 0007.
 
-1. Implement a dedicated `sociarium-import-x-archive` crate rather than forcing offline import through the network-oriented `SocialAdapter` trait.
-2. Support ZIP and extracted-directory input with traversal-safe ZIP handling.
-3. Detect historical X/Twitter archive file shapes defensively, including JavaScript-assignment-wrapped JSON.
-4. Normalize self-owned profile and authored Posts using stable native X IDs; handles remain mutable.
-5. Preserve enough original archive evidence and provenance to explain every normalized record.
-6. Make re-import idempotent at the visible/query layer and safe for newer archives.
-7. Reuse the existing durable profile-binding guard so a different X account cannot be imported beneath an established local profile.
-8. Wire CLI `import x-archive <ZIP_OR_DIR> --profile <id>`, index rebuild, and local list/search.
-9. Add a real-archive Windows validation run after synthetic fixtures are green.
+### Implementation freeze
 
-Do not add browser scraping, private X protocols, paid third-party APIs, posting, arbitrary public-X search, GUI work, recommendation feeds, multiple new surfaces, or MCP to M0.
+Do **not** start new surface-specific implementation during R0.
 
-The frozen `m0-rc1` branch remains the official-API candidate. Do not mutate its meaning; new zero-cost work proceeds on `main`.
+In particular, do not continue the X archive importer, add ZIP handling, build another live adapter, start MCP, or begin a private-protocol client merely because the code path is available.
+
+Allowed implementation work during the research phase is limited to preservation/maintenance/security/build fixes needed to keep existing project state healthy, unless the human principal explicitly overrides the freeze.
+
+Existing pre-atlas implementation remains preserved:
+
+- the official X API candidate on `m0-rc1`;
+- the current Rust substrate on `main`;
+- partial X archive-import work already present on `main`.
+
+None of these automatically determines the next implementation target.
+
+### Research progression
+
+```text
+R0  enumerate surfaces
+R1  build evidence-backed dossiers
+R2  classify tiers + per-data-class access
+R3  make explicit implementation-admission decisions
+M0  resume implementation against a researched target
+```
+
+A dossier may conclude **document only / do not implement**.
+
+Permanent rule:
+
+> **Research chooses implementation. Implementation does not choose the research agenda.**
