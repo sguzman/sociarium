@@ -45,8 +45,12 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Check the installation and adapter registry.
-    Doctor,
+    /// Check installation health or one profile's local live-smoke readiness.
+    Doctor {
+        /// Run the no-network preflight for one configured profile.
+        #[arg(long)]
+        profile: Option<String>,
+    },
     /// Initialize and inspect durable corpus repositories.
     Corpus {
         #[command(subcommand)]
@@ -153,7 +157,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Doctor => doctor(),
+        Command::Doctor { profile } => match profile {
+            Some(profile) => doctor_profile(&cli.config, &cli.corpus, &profile)?,
+            None => doctor(),
+        },
         Command::Corpus {
             command: CorpusCommand::Init { path },
         } => corpus_init(&path)?,
@@ -237,6 +244,234 @@ fn doctor() {
     println!("native credential store: {native_store_state}");
     println!("X emergency access-token environment: {x_token_state}");
     println!("current M0 slice: auth + profile sync -> durable corpus -> rebuildable search");
+}
+
+fn doctor_profile(
+    config_path: &Path,
+    corpus: &Path,
+    profile_id: &str,
+) -> Result<(), Box<dyn Error>> {
+    let credential_store = NativeCredentialStore::new().map_err(|error| {
+        io::Error::new(
+            io::ErrorKind::Unsupported,
+            format!("preflight credential store failed: {error}"),
+        )
+    })?;
+    let lines = profile_preflight(
+        config_path,
+        corpus,
+        profile_id,
+        &credential_store,
+        env::var_os(X_ACCESS_TOKEN_ENV).is_some(),
+    )?;
+    for line in lines {
+        println!("{line}");
+    }
+    Ok(())
+}
+
+fn profile_preflight(
+    config_path: &Path,
+    corpus: &Path,
+    profile_id: &str,
+    credential_store: &dyn CredentialStore,
+    environment_override_present: bool,
+) -> Result<Vec<String>, Box<dyn Error>> {
+    let config = SociariumConfig::load(config_path).map_err(|error| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("preflight config failed: {error}"),
+        )
+    })?;
+    let profile = configured_profile(&config, profile_id).map_err(|error| {
+        io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("preflight profile failed: {error}"),
+        )
+    })?;
+    if !profile.enabled {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!("preflight profile failed: {} is disabled", profile.id),
+        )
+        .into());
+    }
+
+    let mut lines = vec![
+        format!("PASS config: {}", config_path.display()),
+        format!(
+            "PASS profile: {} (surface={} enabled=true)",
+            profile.id, profile.surface
+        ),
+    ];
+
+    match profile.surface.as_str() {
+        "x" => {
+            let adapter = XAdapter::new();
+            if adapter.surface_id() != profile.surface {
+                return Err(io::Error::new(
+                    io::ErrorKind::Unsupported,
+                    format!(
+                        "preflight adapter failed: no runnable adapter for surface {}",
+                        profile.surface
+                    ),
+                )
+                .into());
+            }
+            lines.push(format!("PASS adapter: {}", profile.surface));
+
+            let (_oauth, redirect_uri) = x_oauth_config(&config).map_err(|error| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("preflight X OAuth config failed: {error}"),
+                )
+            })?;
+            let listener = OAuthCallbackListener::bind(&redirect_uri).map_err(|error| {
+                io::Error::new(
+                    io::ErrorKind::AddrInUse,
+                    format!("preflight callback bind failed: {error}"),
+                )
+            })?;
+            let callback_address = listener.listener.local_addr()?;
+            lines.push("PASS x oauth config: client_id present, loopback redirect valid".to_owned());
+            lines.push(format!("PASS callback bind: {callback_address}"));
+            drop(listener);
+        }
+        surface => {
+            return Err(io::Error::new(
+                io::ErrorKind::Unsupported,
+                format!("preflight adapter failed: no runnable adapter for surface {surface}"),
+            )
+            .into());
+        }
+    }
+
+    credential_roundtrip(credential_store, profile)?;
+    lines.push("PASS credential store: available".to_owned());
+    lines.push("PASS credential roundtrip: save/load/delete".to_owned());
+
+    let store = CorpusStore::open_initialized(corpus).map_err(|error| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("preflight corpus failed: {error}"),
+        )
+    })?;
+    lines.push(format!(
+        "PASS corpus: {} (initialized dedicated corpus)",
+        corpus.display()
+    ));
+
+    match store.profile_binding(profile)? {
+        ProfileBinding::Unbound => {
+            if let Some(remote_id) = &profile.remote_id {
+                lines.push(format!(
+                    "PASS profile binding: unbound; enrollment guard remote_id={remote_id} present"
+                ));
+            } else if let Some(handle) = profile.handle.as_deref() {
+                lines.push(format!(
+                    "PASS profile binding: unbound; enrollment guard handle=@{handle} present"
+                ));
+            } else {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!(
+                        "preflight profile binding failed: {} is unbound and has no remote_id or handle enrollment guard",
+                        profile.id
+                    ),
+                )
+                .into());
+            }
+        }
+        ProfileBinding::Bound(durable_remote_id) => {
+            if let Some(configured_remote_id) = &profile.remote_id {
+                if configured_remote_id != &durable_remote_id {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "preflight profile binding failed: configured remote_id {} conflicts with durable remote_id {} for {}",
+                            configured_remote_id, durable_remote_id, profile.id
+                        ),
+                    )
+                    .into());
+                }
+            }
+            lines.push(format!(
+                "PASS profile binding: bound remote_id={durable_remote_id}"
+            ));
+        }
+        ProfileBinding::Conflicted(remote_ids) => {
+            let ids = remote_ids
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!(
+                    "preflight profile binding failed: conflicted durable remote ids for {}: [{}]",
+                    profile.id, ids
+                ),
+            )
+            .into());
+        }
+    }
+
+    if environment_override_present {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            format!(
+                "preflight emergency env override failed: {X_ACCESS_TOKEN_ENV} is present; unset it for the deliberate native-credential smoke test"
+            ),
+        )
+        .into());
+    }
+    lines.push("PASS emergency env override: absent".to_owned());
+    lines.push("READY local preflight passed; next boundary is live X authorization".to_owned());
+
+    Ok(lines)
+}
+
+fn credential_roundtrip(
+    store: &dyn CredentialStore,
+    profile: &TrackedProfile,
+) -> Result<(), Box<dyn Error>> {
+    let key = CredentialKey::new(
+        profile.surface.clone(),
+        profile.id.clone(),
+        format!("diagnostic_preflight_{}", std::process::id()),
+    )?;
+    let probe = b"sociarium-nonsecret-preflight-probe";
+
+    store.save(&key, probe).map_err(|error| {
+        io::Error::other(format!("preflight credential roundtrip save failed: {error}"))
+    })?;
+
+    let result = (|| -> Result<(), Box<dyn Error>> {
+        let loaded = store.load(&key).map_err(|error| {
+            io::Error::other(format!("preflight credential roundtrip load failed: {error}"))
+        })?;
+        if loaded.as_deref() != Some(probe.as_slice()) {
+            return Err(io::Error::other(
+                "preflight credential roundtrip failed: loaded probe did not match saved probe",
+            )
+            .into());
+        }
+        Ok(())
+    })();
+
+    let cleanup = store.delete(&key).map_err(|error| {
+        io::Error::other(format!("preflight credential roundtrip cleanup failed: {error}"))
+    });
+
+    match (result, cleanup) {
+        (Err(error), _) => Err(error),
+        (Ok(()), Err(error)) => Err(error.into()),
+        (Ok(()), Ok(false)) => Err(io::Error::other(
+            "preflight credential roundtrip cleanup failed: diagnostic entry was not deleted",
+        )
+        .into()),
+        (Ok(()), Ok(true)) => Ok(()),
+    }
 }
 
 fn config_check(path: &Path) -> Result<(), Box<dyn Error>> {
