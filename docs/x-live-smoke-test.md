@@ -1,8 +1,12 @@
-# X live smoke test
+# Optional paid X API live smoke test
 
-This runbook is the final M0 validation gate. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
+This runbook validates the official X API backend. It is **not** the active M0 completion gate because current X API access is pay-per-use and Sociarium's M0 product constraint is zero paid API spend.
 
-> **Current status:** repository-side M0 pre-live work is complete. This runbook is now the final M0 validation gate.
+The active zero-cost M0 runbook is [`x-archive-import.md`](x-archive-import.md).
+
+This runbook remains available for an operator who deliberately chooses to fund official API synchronization. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
+
+> **Current status:** implementation is frozen/tested on `m0-rc1`; live validation is optional and intentionally deferred under the zero-spend M0 policy.
 
 Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw failed OAuth/API response bodies, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
 
@@ -291,7 +295,7 @@ Do not bypass a failure by moving tokens into configuration/corpus files, writin
 
 ## M0 completion evidence
 
-M0 can close when the repository-side pre-live issues are resolved and the real smoke run demonstrates all of these together:
+The optional paid API backend can be considered live-validated when the smoke run demonstrates all of these together:
 
 - a dedicated operator corpus is initialized and Git-safe;
 - profile-aware local preflight passes without contacting X;
@@ -309,4 +313,4 @@ M0 can close when the repository-side pre-live issues are resolved and the real 
 - canonical corpus files are Git-visible while indexes/pending state are disposable;
 - no bearer secret is found in tracked/local corpus data or pasteable diagnostics.
 
-Once recorded, update issue #1 with the smoke-test result and close M0.
+If this optional paid validation is ever performed, record the result on the historical API issue. Do not make it a prerequisite for zero-cost M0.
