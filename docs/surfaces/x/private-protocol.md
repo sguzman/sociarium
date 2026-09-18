@@ -71,7 +71,7 @@ After the first direct capture, Sociarium still has not directly established:
 - query-ID volatility across reloads/builds;
 - the complete feature/field-toggle behavior across self-data operation families;
 - whether all self-data reads require authenticated cookies;
-- own-profile pagination request semantics and terminal cursor behavior;
+- mature-account history depth and whether any older-history ceiling appears before terminal pagination;
 - history depth for `UserTweets`, `Likes`, or `Bookmarks`;
 - bookmark-folder behavior;
 - DM protocol families;
@@ -102,7 +102,7 @@ Directly observed in Microsoft Edge 153:
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The capture did **not** yet observe own-profile pagination, a repost wrapper, query-ID drift across reloads, or the Likes/Bookmarks/Followers/Following/Lists/Notifications operation families.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Likes/Bookmarks/Followers/Following/Lists/Notifications operation families remain unobserved.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
