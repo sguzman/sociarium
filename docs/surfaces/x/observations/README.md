@@ -48,6 +48,7 @@ Never commit:
 
 - [2026-09-18 profile/timeline capture A](2026-09-18-profile-a.md) — first direct Edge/X observation; confirms current profile/detail operations, identity fields, reply/quote and `note_tweet` structures.
 - [2026-09-18 profile pagination to terminal history](2026-09-18-profile-pagination.md) — confirms Bottom-cursor pagination, 93 unique Posts in this young account, explicit `TimelineTerminateTimeline(direction=Bottom)`, and short-interval query-ID stability.
+- [2026-09-18 History → Likes](2026-09-18-likes.md) — confirms current `/i/history/likes` UI location, GraphQL `Likes`, Bottom-cursor pagination, and 80 unique liked Posts across four pages.
 
 ## Naming
 
