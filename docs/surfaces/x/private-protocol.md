@@ -102,7 +102,7 @@ Directly observed in Microsoft Edge 153:
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Following/Lists/Notifications operation families remain unobserved. Likes and Bookmarks are directly observed under the current History UI. Followers is also directly observed as GraphQL `Followers`, scoped by `userId`, returning `TimelineUser` entries with relationship state and explicit Top/Bottom termination in the bounded capture.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Lists/Notifications operation families remain unobserved. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`; Following additionally demonstrates multi-page Bottom-cursor pagination.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
@@ -133,6 +133,16 @@ The small current follower set fit in one response. That response carried both `
 Returned user objects exposed stable `rest_id` values and `relationship_perspectives` including `followed_by`, `following`, blocking, and muting state.
 
 See [observations/2026-09-18-followers.md](observations/2026-09-18-followers.md).
+
+### Following
+
+A 2026-09-18 direct capture established the GraphQL operation `Following`, also scoped by `userId`, with multi-page Bottom-cursor pagination through `variables.cursor`.
+
+Four observed pages reused one dated query ID and returned 200 unique `TimelineUser` entries total. Every primary user entry had `relationship_perspectives.following = true`.
+
+A notable wire behavior is that the request sent `count=20` while each response carried 50 primary users. Sociarium therefore does not treat the requested count as a hard page-size contract for this operation.
+
+See [observations/2026-09-18-following.md](observations/2026-09-18-following.md).
 
 ## Technical promise
 
