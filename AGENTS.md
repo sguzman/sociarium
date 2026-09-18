@@ -10,8 +10,8 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 
 ## Non-negotiable architecture
 
-1. Sociarium is not an X/Twitter client with future generalization bolted on. It is a generic social-data substrate whose first adapter is X.
-2. Surfaces are adapters, not ontology.
+1. Sociarium is not an X/Twitter client with future generalization bolted on. It is a generic social-data substrate whose first surface integration is X.
+2. Surfaces are not acquisition sources and neither is ontology. One surface may have multiple explicit acquisition mechanisms (API, archive import, later capture sources).
 3. Profiles are first-class synchronization scopes. Never introduce a hidden global "current account" assumption into core APIs.
 4. A remote profile is identified durably by surface + stable remote ID. Handles/display names are mutable observations, not identity keys. One local profile must never silently become a bucket for multiple remote profile IDs.
 5. A remote profile is not automatically a real-world person. Cross-profile identity links must be explicit and provenance-preserving.
@@ -50,16 +50,26 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 
 ## Current milestone
 
-M0 is one vertical slice:
+M0 is now the **zero-cost X archive vertical slice** tracked in issue #8.
 
-`configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
+Hard constraint: do not require paid X API credits for M0. The official API backend is already implemented and preserved as an optional paid integration; do not make the human principal fund it merely to finish M0.
 
-The vertical slice and all repository-side pre-live hardening are implemented. Issues #2–#7 are complete and CI-verified.
+Target:
 
-### Current M0 gate
+`X account archive -> archive importer -> raw/source evidence -> normalized self-owned profile + Posts -> durable corpus -> stable profile binding -> rebuildable query index -> CLI query`
 
-Do **not** widen the implementation backlog before validating the completed vertical slice. The remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account, using the dedicated corpus boundary.
+### Current implementation queue
 
-Before live authorization, run the profile-aware no-network preflight against the real corpus/config. It must report `READY`. Then follow `docs/x-live-smoke-test.md` through native OAuth, Windows Credential Manager persistence, first sync, stable profile binding, local query/index rebuild, and second incremental sync. Do not close M0 until stable remote identity is bound/verified, native login and credential persistence succeed, real sync and durable checkpointing succeed, the index rebuild/local query succeed, and a second incremental sync preserves the same bound remote profile.
+1. Implement a dedicated `sociarium-import-x-archive` crate rather than forcing offline import through the network-oriented `SocialAdapter` trait.
+2. Support ZIP and extracted-directory input with traversal-safe ZIP handling.
+3. Detect historical X/Twitter archive file shapes defensively, including JavaScript-assignment-wrapped JSON.
+4. Normalize self-owned profile and authored Posts using stable native X IDs; handles remain mutable.
+5. Preserve enough original archive evidence and provenance to explain every normalized record.
+6. Make re-import idempotent at the visible/query layer and safe for newer archives.
+7. Reuse the existing durable profile-binding guard so a different X account cannot be imported beneath an established local profile.
+8. Wire CLI `import x-archive <ZIP_OR_DIR> --profile <id>`, index rebuild, and local list/search.
+9. Add a real-archive Windows validation run after synthetic fixtures are green.
 
-Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, multiple adapters, deep thread acquisition, full repost/reblog ontology, or general rich-text/article parsing. The architecture must permit those later without implementing them now.
+Do not add browser scraping, private X protocols, paid third-party APIs, posting, arbitrary public-X search, GUI work, recommendation feeds, multiple new surfaces, or MCP to M0.
+
+The frozen `m0-rc1` branch remains the official-API candidate. Do not mutate its meaning; new zero-cost work proceeds on `main`.
