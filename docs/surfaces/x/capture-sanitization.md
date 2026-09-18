@@ -20,6 +20,20 @@ Always redact/remove values for:
 
 Header/field **names** may be documented.
 
+## Browser "sanitized HAR" is still private
+
+Direct observation on 2026-09-18 with Microsoft Edge 153 showed that Edge's sanitized HAR export omitted ordinary `Cookie`, `Authorization`, and `Set-Cookie` material from the captured file but **retained non-empty `x-csrf-token` request-header values**.
+
+Therefore:
+
+- do not treat the browser's "sanitized" label as a publication guarantee;
+- sanitized HAR files remain private evidence;
+- never commit them directly;
+- extract and review structural observations before publication;
+- continue removing/redacting `x-csrf-token` and other authority-bearing values explicitly if creating any secondary sanitized artifact.
+
+This is a dated observation of Edge 153 behavior, not a claim about every browser/exporter version.
+
 ## Private-content classes: default private
 
 Do not publish raw values for:
