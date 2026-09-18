@@ -54,6 +54,7 @@ Never commit:
 - [2026-09-18 Following](2026-09-18-following.md) — confirms GraphQL `Following`, multi-page Bottom-cursor relationship pagination, 200 unique users across four pages, and the observed `count=20` versus 50 returned users-per-page mismatch.
 - [2026-09-18 Lists](2026-09-18-lists.md) — confirms `ListsManagementPageTimeline`, viewer-scoped management modules, stable list IDs/state, bounded termination, and HTTP 200 partial GraphQL errors alongside usable data.
 - [2026-09-18 Notifications — All](2026-09-18-notifications-all.md) — confirms viewer-scoped `NotificationsTimeline`, mixed notification/Post entries, unread-state instructions, Bottom-cursor pagination, and terminal exhaustion by disappearance of the Bottom cursor.
+- [2026-09-18 Notifications — Mentions](2026-09-18-notifications-mentions.md) — confirms Mentions reuses `NotificationsTimeline` with `timeline_type=Mentions`, returns ordinary Post items in the bounded sample, and shares the same cursor-disappearance terminal behavior.
 
 ## Naming
 
