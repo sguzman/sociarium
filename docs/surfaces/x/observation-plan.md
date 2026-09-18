@@ -1,6 +1,6 @@
 # X direct first-party observation plan
 
-Status: active under issue #12; first operator capture analyzed and recorded. Own-profile pagination/reload comparison and self-data views remain outstanding.
+Status: active under issue #12; profile initial load, Post detail, Bottom-cursor pagination through terminal history, and short-interval query-ID reload comparison are directly observed. Self-data views and repost representation remain outstanding.
 
 Purpose: convert public reverse-engineering claims into **dated Sociarium observations** of the first-party X web client used by the operator's own authorized account.
 
@@ -104,7 +104,7 @@ Direct observations are stored under:
 
 `docs/surfaces/x/observations/YYYY-MM-DD-<topic>.md`
 
-First direct observation: [2026-09-18-profile-a.md](observations/2026-09-18-profile-a.md).
+Direct observations now include [2026-09-18-profile-a.md](observations/2026-09-18-profile-a.md) and [2026-09-18-profile-pagination.md](observations/2026-09-18-profile-pagination.md).
 
 Each observation should clearly say:
 
