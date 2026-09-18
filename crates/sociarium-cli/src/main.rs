@@ -333,7 +333,8 @@ fn profile_preflight(
                 )
             })?;
             let callback_address = listener.listener.local_addr()?;
-            lines.push("PASS x oauth config: client_id present, loopback redirect valid".to_owned());
+            lines
+                .push("PASS x oauth config: client_id present, loopback redirect valid".to_owned());
             lines.push(format!("PASS callback bind: {callback_address}"));
             drop(listener);
         }
@@ -442,9 +443,9 @@ fn credential_roundtrip(
     )?;
     let probe = b"sociarium-nonsecret-preflight-probe";
 
-    store.save(&key, probe).map_err(|_| {
-        io::Error::other("preflight credential roundtrip save failed")
-    })?;
+    store
+        .save(&key, probe)
+        .map_err(|_| io::Error::other("preflight credential roundtrip save failed"))?;
 
     let result = (|| -> Result<(), Box<dyn Error>> {
         let loaded = store
@@ -1256,13 +1257,8 @@ mod tests {
     #[test]
     fn profile_preflight_succeeds_offline_for_safe_first_enrollment() {
         let root = preflight_root("success");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            true,
-            Some("sguzman"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), true, Some("sguzman"), None);
         let credentials = MemoryCredentialStore::default();
 
         let lines = preflight_lines(&config, &root, &credentials).unwrap();
@@ -1284,13 +1280,8 @@ mod tests {
     #[test]
     fn profile_preflight_rejects_missing_or_disabled_profile() {
         let root = preflight_root("profile-errors");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            false,
-            Some("sguzman"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), false, Some("sguzman"), None);
         let credentials = MemoryCredentialStore::default();
 
         let missing = profile_preflight(&config, &root, "missing", &credentials, false)
@@ -1309,13 +1300,8 @@ mod tests {
     #[test]
     fn profile_preflight_rejects_missing_x_oauth_setting() {
         let root = preflight_root("missing-oauth");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            true,
-            Some("sguzman"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), true, Some("sguzman"), None);
         let text = fs::read_to_string(&config)
             .unwrap()
             .replace("client_id = \"test-client\"\n", "");
@@ -1332,13 +1318,8 @@ mod tests {
     #[test]
     fn profile_preflight_rejects_non_loopback_redirect() {
         let root = preflight_root("invalid-redirect");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            true,
-            Some("sguzman"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), true, Some("sguzman"), None);
         let text = fs::read_to_string(&config)
             .unwrap()
             .replace("http://127.0.0.1:", "https://example.com:");
@@ -1372,13 +1353,8 @@ mod tests {
     #[test]
     fn profile_preflight_reports_bound_remote_id() {
         let root = preflight_root("bound");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            true,
-            Some("old-handle"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), true, Some("old-handle"), None);
         let store = CorpusStore::open_initialized(&root).unwrap();
         let profile = binding_test_profile(None);
         persist_test_binding(&store, &profile, "6679733");
@@ -1419,13 +1395,8 @@ mod tests {
     #[test]
     fn profile_preflight_rejects_conflicted_durable_identity() {
         let root = preflight_root("durable-conflict");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            true,
-            Some("old-handle"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), true, Some("old-handle"), None);
         let store = CorpusStore::open_initialized(&root).unwrap();
         let profile = binding_test_profile(None);
         persist_test_binding(&store, &profile, "6679733");
@@ -1495,13 +1466,8 @@ mod tests {
     #[test]
     fn profile_preflight_does_not_echo_hostile_credential_backend_text() {
         let root = preflight_root("credential-redaction");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            true,
-            Some("sguzman"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), true, Some("sguzman"), None);
 
         let error = preflight_lines(&config, &root, &HostileCredentialStore)
             .unwrap_err()
@@ -1517,13 +1483,8 @@ mod tests {
     #[test]
     fn profile_preflight_rejects_emergency_x_token_override() {
         let root = preflight_root("env-override");
-        let config = write_preflight_config(
-            &root,
-            free_loopback_port(),
-            true,
-            Some("sguzman"),
-            None,
-        );
+        let config =
+            write_preflight_config(&root, free_loopback_port(), true, Some("sguzman"), None);
 
         let error = profile_preflight(
             &config,
