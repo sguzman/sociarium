@@ -77,6 +77,29 @@ Research-before-code and the Surface Atlas are architectural policy, not project
 
 ## Core concepts
 
+### Surface dossier
+
+A dated, provenance-heavy research record for one social surface.
+
+A dossier distinguishes documented facts, direct observations, inference, and unknowns. It records per-data-class access, cost, friction, history, authentication, protocol behavior, and candidate acquisition sources.
+
+### Access tier
+
+A dated summary classification of the surface's access relationship:
+
+- Tier A — Sovereign-friendly;
+- Tier B — Workable;
+- Tier C — Adversarial;
+- Tier D — Inaccessible.
+
+The tier is not a social/political rating of the platform. Per-data-class matrices remain more precise than the overall tier.
+
+### Implementation admission
+
+A deliberate decision to spend engineering effort on a specific acquisition source after research establishes why it is worthwhile.
+
+No surface is automatically entitled to implementation.
+
 ### Surface
 
 A remote social system such as X, Reddit, Bluesky, Mastodon, or YouTube.
@@ -214,3 +237,26 @@ The research program does not treat "adversarial" as permission for credential t
 Recommendation feeds, ad systems, general-purpose public social search, notification ecosystems, or GUI clones are out of scope unless later justified by acquisition/preservation/query needs.
 
 Sociarium also does not assume every researched surface should receive code. Documentation-only outcomes are first-class.
+
+
+## Research architecture
+
+The Surface Atlas lives under `docs/surfaces/` and is durable project state, not disposable planning material.
+
+Each dossier should preserve:
+
+- dates and client/context;
+- evidence class (documented / observed / inferred / unknown);
+- source provenance;
+- per-data-class access matrix;
+- monetary cost and non-monetary friction;
+- stable identity/object semantics;
+- authorization boundary;
+- history/pagination behavior;
+- protocol volatility;
+- acquisition candidates;
+- implementation recommendation.
+
+For adversarial surfaces, public documentation may be supplemented by sanitized observations of the authorized first-party client. Sensitive raw captures remain outside the public repository.
+
+See ADR 0007 and `docs/surface-research-doctrine.md`.
