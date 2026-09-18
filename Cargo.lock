@@ -1101,6 +1101,7 @@ dependencies = [
  "sociarium-config",
  "sociarium-core",
  "sociarium-credentials",
+ "sociarium-import-x-archive",
  "sociarium-search",
  "sociarium-store",
  "sociarium-sync",
