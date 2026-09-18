@@ -54,14 +54,13 @@ M0 is one vertical slice:
 
 `configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
 
-The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. Issues #3–#6 are complete; M0 is **not repository-complete** while the remaining pre-live issues #7 and #2 remain open.
+The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. Issues #3–#7 are complete; M0 is **not repository-complete** while the final pre-live issue #2 remains open.
 
 ### Current implementation queue
 
 Implement bounded issues from the repository rather than asking the human principal to relay prompts between agents. Preferred order:
 
-1. **#7 — stable remote profile binding.** Establish/recover a durable surface + remote-ID binding for each local profile, prevent credential swaps from silently changing identity, and keep handles mutable after binding.
-2. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus/profile-binding boundaries into a no-network readiness check safe to paste into issue evidence.
+1. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus/profile-binding boundaries into a no-network readiness check safe to paste into issue evidence.
 
 After each bounded issue:
 
