@@ -1,5 +1,7 @@
 # Synchronization
 
+> **Status:** technical reference for the existing software substrate. The current Surface Atlas phase is research-first; this document does not define the active milestone.
+
 Synchronization is profile-scoped. A surface adapter acquires one configured `TrackedProfile` at a time and returns durable batches containing normalized records, raw evidence, and an opaque adapter-owned checkpoint cursor.
 
 ## Execution contract
@@ -19,7 +21,7 @@ The cursor is intentionally opaque outside the adapter. Core synchronization cod
 
 A first synchronization can only acquire history that the remote surface currently exposes. Durable local preservation does not imply unlimited retrospective remote access.
 
-For X M0, `/2/users/:id/tweets` exposes a bounded recent user-post timeline (currently approximately the most recent 3,200 Posts). Therefore:
+For the existing pre-atlas X implementation, `/2/users/:id/tweets` exposes a bounded recent user-post timeline (currently approximately the most recent 3,200 Posts). Therefore:
 
 - the first X traversal bootstraps the retrievable recent window, not necessarily the profile's complete lifetime history;
 - a terminal first traversal means Sociarium exhausted the currently exposed timeline window, not that no older Posts have ever existed;
@@ -36,7 +38,7 @@ An incremental checkpoint answers: "what remote state had been completely incorp
 
 Those are different concepts. `SocialAdapter::cursor_has_more` lets an adapter return a non-empty durable checkpoint even when the current traversal is complete.
 
-For X, the M0 cursor contains:
+For the existing X adapter, the cursor contains:
 
 - the previous completed `since_id` high-water mark;
 - a `pagination_token` while a traversal still has more pages;
@@ -93,7 +95,7 @@ The generic command shape is:
 sociarium sync <profile-id>
 ```
 
-Useful M0 controls:
+Existing synchronization controls:
 
 ```text
 sociarium sync x-main --max-pages 10000
@@ -102,7 +104,7 @@ sociarium sync x-main --no-index
 
 A successful sync rebuilds the disposable search index unless `--no-index` is supplied.
 
-The X M0 user-post request now uses `tweet.fields=created_at,referenced_tweets,note_tweet` and `exclude=retweets`. Replies and quote Posts remain eligible and their portable relationships are normalized when X supplies them; long-form Posts prefer full `note_tweet.text`; retweets are deliberately excluded until Sociarium has a portable repost/reblog relation. The real X smoke run remains held behind the other pre-live issues tracked from #1.
+The existing X user-post request uses `tweet.fields=created_at,referenced_tweets,note_tweet` and `exclude=retweets`. Replies and quote Posts remain eligible and their portable relationships are normalized when X supplies them; long-form Posts prefer full `note_tweet.text`; retweets are deliberately excluded until Sociarium has a portable repost/reblog relation. Live paid-X validation is preserved as an optional/deferred path; further X implementation now waits on the Surface Atlas research/admission process.
 
 ## Failure rules
 
