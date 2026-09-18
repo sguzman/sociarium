@@ -10,13 +10,15 @@ During the Surface Atlas phases, progress is measured primarily in durable knowl
 
 ## Current phase
 
-The current project phase is **R0 — enumerate the surfaces the human principal cares about**.
+**R1 — baseline Surface Atlas dossiers is complete.**
 
-No new surface-specific implementation should begin during R0. The immediate task is to build the inventory, then investigate those surfaces systematically.
+All six surfaces in the initial inventory now have evidence-backed baseline dossiers. New surface-specific implementation remains frozen unless the human principal explicitly changes phase.
+
+The next research phase is **R2 — direct first-party observation / adversarial protocol archaeology**, beginning with X because it is the operator's highest-priority surface.
 
 ## Inventory
 
-The human principal will supply the initial list. Do not guess or pad this table merely to make it look complete.
+The initial inventory is complete. Do not guess or pad this table merely to make it look complete; later additions are allowed when the human principal actually cares about another surface.
 
 | Surface | Operator priority | Research status | Overall tier | Last reviewed | Dossier |
 | --- | --- | --- | --- | --- | --- |
@@ -25,7 +27,7 @@ The human principal will supply the initial list. Do not guess or pad this table
 | Bluesky | unranked | baseline desk-research dossier complete; direct observation pending | **Tier A — Sovereign-friendly** | 2026-09-18 | [dossier](bluesky/README.md) |
 | Facebook | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](facebook/README.md) |
 | YouTube | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier B — Workable (Tier C pockets) | 2026-09-18 | [dossier](youtube/README.md) |
-| Quora | unranked | queued for baseline dossier | unknown | — | pending |
+| Quora | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](quora/README.md) |
 
 The initial inventory is intentionally open-ended. New surfaces may be added later without reopening the question of whether the first inventory was valid.
 
