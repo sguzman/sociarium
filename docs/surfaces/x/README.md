@@ -7,7 +7,7 @@
 - Last reviewed: 2026-09-18
 - Operator priority: **highest**
 - Overall access tier: **provisional Tier C — Adversarial**
-- Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, Likes, Bookmarks, Followers, Following, Lists management, and the main Notifications stream; remaining undocumented subviews are medium-confidence until observed
+- Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, Likes, Bookmarks, Followers, Following, Lists management, Notifications, and Mentions; remaining undocumented subviews are medium-confidence until observed
 
 ## Executive summary
 
@@ -19,7 +19,7 @@ X separately offers an official account archive through normal account settings.
 
 X Help currently says the ordinary profile timeline displays up to 3,200 of the user's most recent posts and directs users to the archive for older history. The current official `GET /2/users/{id}/tweets` API reference does **not** state that same 3,200 ceiling. Sociarium therefore treats the current API historical ceiling as **unknown pending direct/official evidence** rather than inheriting an older assumption.
 
-Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`. Sociarium now has direct current observations for `UserOriginalsTimeline`, `UserByScreenName`, `TweetDetail`, `HomeTimeline`, `Likes`, `Bookmarks`, `Followers`, `Following`, and `ListsManagementPageTimeline`, including timeline pagination, terminal-history behavior, relationship payloads, viewer-scoped list management, and partial GraphQL error handling. The main Notifications stream is now directly observed; the Mentions subview still requires direct observation.
+Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`. Sociarium now has direct current observations for `UserOriginalsTimeline`, `UserByScreenName`, `TweetDetail`, `HomeTimeline`, `Likes`, `Bookmarks`, `Followers`, `Following`, and `ListsManagementPageTimeline`, including timeline pagination, terminal-history behavior, relationship payloads, viewer-scoped list management, and partial GraphQL error handling. Both the main Notifications stream and the Mentions subview are now directly observed through the same `NotificationsTimeline` operation with different `timeline_type` selectors.
 
 X's current Terms of Service expressly prohibit scraping and automated access through interfaces other than X's currently available published interfaces unless separately permitted. X's April 2026 Automation Rules also say not to use non-API automation such as scripting the X website. That creates a major implementation constraint even where the private protocol is technically observable.
 
@@ -137,11 +137,11 @@ See [the Lists observation](observations/2026-09-18-lists.md).
 
 ### Current Notifications UI
 
-Direct observation on 2026-09-18 found that the main `/notifications` page uses viewer-scoped GraphQL `NotificationsTimeline` with `timeline_type=All`.
+Direct observation on 2026-09-18 found that both the main `/notifications` page and `/notifications/mentions` use viewer-scoped GraphQL `NotificationsTimeline`.
 
-The stream mixes aggregate `TimelineNotification` items and ordinary `TimelineTweet` items, carries unread-state instructions, and paginates through Bottom cursors. In the bounded sample, final exhaustion appeared as an empty page with no Bottom cursor rather than an explicit terminal instruction.
+The main stream selects `timeline_type=All` and mixes aggregate `TimelineNotification` items with ordinary `TimelineTweet` items. The Mentions subview selects `timeline_type=Mentions`; its bounded sample returned ordinary Posts that directly mentioned/replied to the operator. Both selectors carried unread-state instructions and exhausted by returning an empty page without a Bottom cursor.
 
-See [the Notifications observation](observations/2026-09-18-notifications-all.md).
+See [the All Notifications observation](observations/2026-09-18-notifications-all.md) and [the Mentions observation](observations/2026-09-18-notifications-mentions.md).
 
 ## Current R2 status
 
