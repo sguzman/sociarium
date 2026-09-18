@@ -2,6 +2,8 @@
 
 This repository is an ongoing collaboration space. Preserve research provenance, architectural intent, and documentation as first-class project state. During the Surface Atlas phase, documentation outranks implementation velocity.
 
+The governing project intent is summarized in `docs/project-charter.md`. When implementation pressure conflicts with the charter, stop and surface the conflict rather than quietly privileging code.
+
 ## Roles
 
 - **Human principal:** owns goals, constraints, credentials, and final product authority.
@@ -69,11 +71,11 @@ This repository is an ongoing collaboration space. Preserve research provenance,
 
 The active milestone is **R0 — Surface inventory**.
 
-The human principal will enumerate the social sites they care about. Sociarium will then investigate those surfaces systematically before selecting any new implementation target.
+The human principal will enumerate the social sites they care about in issue #10 / the Surface Atlas inventory. Sociarium will then investigate those surfaces systematically before selecting any new implementation target.
 
 ### Research-first rules
 
-1. **No new surface-specific code during R0.**
+1. **No new surface-specific code during R0 unless the human principal explicitly overrides the research freeze.**
 2. Do not resume the X archive importer merely because partial code already exists.
 3. Do not begin a second adapter because it seems technically attractive.
 4. Do not turn unknowns into assumptions. Record them as unknown.
@@ -114,6 +116,7 @@ The frozen `m0-rc1` branch preserves the official X API candidate. The in-progre
 
 See:
 
+- `docs/project-charter.md`
 - `docs/surfaces/README.md`
 - `docs/surface-research-doctrine.md`
 - `docs/surface-access-tiers.md`
