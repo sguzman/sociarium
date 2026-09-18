@@ -97,14 +97,25 @@ Directly observed in Microsoft Edge 153:
 - Post `rest_id` matching `legacy.id_str`;
 - quote embedding through `quoted_status_result.result`;
 - reply linkage through legacy `in_reply_to_*` fields;
+- repost embedding through `legacy.retweeted_status_result.result`, with distinct outer repost and inner original Post identities;
 - long-form content through `note_tweet.note_tweet_results.result.text`;
 - timeline Top/Bottom cursor entries.
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper remains unobserved. The main Notifications and Mentions streams are both directly observed through viewer-scoped `NotificationsTimeline`, selected by `timeline_type=All` versus `timeline_type=Mentions`, with shared unread-state instructions and cursor-disappearance exhaustion semantics. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A later Home timeline capture directly observed three repost wrappers using `legacy.retweeted_status_result.result`, including visibility-wrapped outer and inner Posts. The main Notifications and Mentions streams are both directly observed through viewer-scoped `NotificationsTimeline`, selected by `timeline_type=All` versus `timeline_type=Mentions`, with shared unread-state instructions and cursor-disappearance exhaustion semantics. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
+
+### Repost representation
+
+A later 2026-09-18 direct `HomeTimeline` capture contained three primary timeline Posts with structural repost wrappers.
+
+After normalizing any outer `TweetWithVisibilityResults`, the reposting Post's `legacy` object embedded the original Post at `retweeted_status_result.result`. The outer repost and embedded original carried distinct stable Post IDs and distinct author IDs. One sample showed that both the outer repost and embedded original may themselves be wrapped in `TweetWithVisibilityResults`, so a parser must normalize that wrapper at both layers.
+
+All three outer repost Posts had viewer-state `legacy.retweeted = false` despite being structurally unambiguous reposts. Sociarium therefore treats `retweeted_status_result` as the relationship marker and `retweeted` as viewer-relative state, not as a Post-type discriminator. The familiar `RT @...` display text was also present but is redundant evidence and should not be parsed to recover the relation.
+
+See [observations/2026-09-18-reposts.md](observations/2026-09-18-reposts.md).
 
 ### History → Likes
 

@@ -7,7 +7,7 @@
 - Last reviewed: 2026-09-18
 - Operator priority: **highest**
 - Overall access tier: **provisional Tier C — Adversarial**
-- Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, Likes, Bookmarks, Followers, Following, Lists management, Notifications, and Mentions; remaining undocumented subviews are medium-confidence until observed
+- Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, reply/quote/repost relationships, Likes, Bookmarks, Followers, Following, Lists management, Notifications, and Mentions; remaining undocumented subviews are medium-confidence until observed
 
 ## Executive summary
 
@@ -19,7 +19,7 @@ X separately offers an official account archive through normal account settings.
 
 X Help currently says the ordinary profile timeline displays up to 3,200 of the user's most recent posts and directs users to the archive for older history. The current official `GET /2/users/{id}/tweets` API reference does **not** state that same 3,200 ceiling. Sociarium therefore treats the current API historical ceiling as **unknown pending direct/official evidence** rather than inheriting an older assumption.
 
-Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`. Sociarium now has direct current observations for `UserOriginalsTimeline`, `UserByScreenName`, `TweetDetail`, `HomeTimeline`, `Likes`, `Bookmarks`, `Followers`, `Following`, and `ListsManagementPageTimeline`, including timeline pagination, terminal-history behavior, relationship payloads, viewer-scoped list management, and partial GraphQL error handling. Both the main Notifications stream and the Mentions subview are now directly observed through the same `NotificationsTimeline` operation with different `timeline_type` selectors.
+Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`. Sociarium now has direct current observations for `UserOriginalsTimeline`, `UserByScreenName`, `TweetDetail`, `HomeTimeline`, `Likes`, `Bookmarks`, `Followers`, `Following`, and `ListsManagementPageTimeline`, including timeline pagination, terminal-history behavior, reply/quote/repost relationship payloads, viewer-scoped list management, and partial GraphQL error handling. Both the main Notifications stream and the Mentions subview are now directly observed through the same `NotificationsTimeline` operation with different `timeline_type` selectors.
 
 X's current Terms of Service expressly prohibit scraping and automated access through interfaces other than X's currently available published interfaces unless separately permitted. X's April 2026 Automation Rules also say not to use non-API automation such as scripting the X website. That creates a major implementation constraint even where the private protocol is technically observable.
 
@@ -97,6 +97,14 @@ Weaknesses:
 
 Status: **research target, not implementation-admitted.**
 
+### Current repost representation
+
+Direct observation on 2026-09-18 found three reposts in a bounded `HomeTimeline` response. X represented each as a distinct outer Post for the repost event with the original embedded at `legacy.retweeted_status_result.result`.
+
+The outer repost and original retained independent stable Post IDs and authors. `TweetWithVisibilityResults` may wrap either layer, and the viewer-state boolean `legacy.retweeted` was `false` on all three outer reposts, so it is not a repost-type discriminator. Sociarium should use the structural embedded result rather than parsing `RT @...` display text.
+
+See [the repost observation](observations/2026-09-18-reposts.md).
+
 ### Current Likes UI
 
 Direct observation on 2026-09-18 found that X Web currently exposes the operator's Likes under **History → Likes** at `/i/history/likes`, rather than as the older profile Likes tab. The underlying data request remains the GraphQL `Likes` operation.
@@ -145,7 +153,7 @@ See [the All Notifications observation](observations/2026-09-18-notifications-al
 
 ## Current R2 status
 
-Direct first-party observation is now active under issue #12.
+Direct first-party observation is now active under issue #12. The reply/quote/repost relation gate is complete; auth/session-boundary completion and the final X tier/recommendation re-review remain before the R2 baseline gate can close.
 
 See:
 
