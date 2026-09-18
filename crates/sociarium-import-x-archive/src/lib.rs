@@ -486,7 +486,7 @@ mod tests {
   {
     "tweet": {
       "id_str": "100",
-      "created_at": "Wed Sep 17 12:00:00 +0000 2026",
+      "created_at": "Thu Sep 17 12:00:00 +0000 2026",
       "full_text": "first archived post",
       "retweeted": false
     }
@@ -494,7 +494,7 @@ mod tests {
   {
     "tweet": {
       "id_str": "200",
-      "created_at": "Wed Sep 17 13:00:00 +0000 2026",
+      "created_at": "Thu Sep 17 13:00:00 +0000 2026",
       "full_text": "reply and quote",
       "in_reply_to_status_id_str": "150",
       "quoted_status_id_str": "175",
@@ -504,7 +504,7 @@ mod tests {
   {
     "tweet": {
       "id_str": "300",
-      "created_at": "Wed Sep 17 14:00:00 +0000 2026",
+      "created_at": "Thu Sep 17 14:00:00 +0000 2026",
       "full_text": "RT @someone this is a repost",
       "retweeted": false
     }
