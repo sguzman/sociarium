@@ -1,12 +1,12 @@
 # Optional paid X API live smoke test
 
-This runbook validates the official X API backend. It is **not** the active M0 completion gate because current X API access is pay-per-use and Sociarium's M0 product constraint is zero paid API spend.
+This runbook validates the existing official X API backend. It is **not** an active project gate.
 
-The active zero-cost M0 runbook is [`x-archive-import.md`](x-archive-import.md).
+ADR 0007 moved Sociarium into the documentation-first Surface Atlas phase. X's official API, account archive, public web surface, and first-party private protocol are now research subjects to compare before further X implementation is admitted.
 
-This runbook remains available for an operator who deliberately chooses to fund official API synchronization. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
+This runbook remains preserved for a future operator who deliberately chooses to fund and validate official API synchronization after an implementation-admission decision. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
 
-> **Current status:** implementation is frozen/tested on `m0-rc1`; live validation is optional and intentionally deferred under the zero-spend M0 policy.
+> **Current status:** implementation is frozen/tested on `m0-rc1`; live validation is optional and deferred during the Surface Atlas research phase.
 
 Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw failed OAuth/API response bodies, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
 
@@ -293,7 +293,7 @@ Classify a failure before changing architecture:
 
 Do not bypass a failure by moving tokens into configuration/corpus files, writing real data into the public source repo, or changing architecture to hide an X contract/billing error. Fix or satisfy the failing boundary.
 
-## M0 completion evidence
+## Optional paid-backend validation evidence
 
 The optional paid API backend can be considered live-validated when the smoke run demonstrates all of these together:
 
@@ -313,4 +313,4 @@ The optional paid API backend can be considered live-validated when the smoke ru
 - canonical corpus files are Git-visible while indexes/pending state are disposable;
 - no bearer secret is found in tracked/local corpus data or pasteable diagnostics.
 
-If this optional paid validation is ever performed, record the result on the historical API issue. Do not make it a prerequisite for zero-cost M0.
+If this optional paid validation is ever performed, record the result on the historical API issue. Do not make it a prerequisite for the current research phase or any future implementation target.
