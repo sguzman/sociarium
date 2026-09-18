@@ -6,23 +6,25 @@ Sociarium is a Rust-native, user-sovereign social-data substrate that synchroniz
 
 ## Status
 
-Sociarium is in M0. The first concrete integration target is X, but X does not define the core model.
+Sociarium is in M0. The first concrete surface is X, but X does not define the core model.
 
-The first vertical slice is structurally implemented:
+A complete official-X-API backend has been implemented and CI-verified, including OAuth2/PKCE, Windows Credential Manager persistence, direct Rust acquisition, crash-resumable sync, durable acquisition bundles, and local search. That path is preserved as an **optional paid backend** on the frozen `m0-rc1` candidate.
 
-1. generic profile and surface configuration;
-2. native X OAuth2 Authorization Code + S256 PKCE;
-3. profile-scoped Windows Credential Manager persistence;
-4. automatic X token refresh;
-5. direct Rust X API acquisition;
-6. crash-resumable and incremental profile synchronization;
-7. durable raw + normalized acquisition bundles;
-8. rebuildable SQLite/FTS search projection;
-9. CLI authorization, sync, list, and search paths.
+X's current official API is prepaid pay-per-use. Sociarium's M0 product constraint is now **zero paid X API spend**.
 
-The pre-live audit is complete. Issues #2–#7 are resolved: X wire/data fidelity, safe remote errors, bounded OAuth callback handling, explicit Git-safe corpus initialization, durable stable remote-profile binding, and the no-network profile-aware readiness preflight are all implemented and CI-verified.
+The active M0 path is issue #8: import the account owner's first-party X data archive into the same durable corpus without an X Developer App, API credits, passwords, cookies, or session tokens.
 
-**Repository-side M0 implementation is complete. The final M0 validation gate is now the deliberate real Windows authorization + synchronization smoke test** using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
+```text
+X account archive ZIP/directory
+  -> detect/parse archive evidence
+  -> normalize self-owned profile + authored Posts
+  -> durable corpus
+  -> stable profile binding
+  -> rebuildable SQLite/FTS index
+  -> posts list/search
+```
+
+The official API backend remains useful later when an operator deliberately chooses paid live synchronization, but it is not required for zero-cost M0.
 
 Build resolution is reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
 
@@ -32,8 +34,9 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 
 - **Local durability:** once a remote observation is acquired, Sociarium can preserve it independently of the remote surface.
 - **No hidden singletons:** no assumption that there is one surface, one profile, or one real-world identity.
-- **Profile-first synchronization:** synchronization is scoped to a configured remote profile; surface-wide commands are conveniences over profiles.
-- **Adapter isolation:** X-, Reddit-, Bluesky-, Mastodon-, and other surface-specific concepts stay behind adapters unless they represent genuinely shared semantics.
+- **Profile-first acquisition:** synchronization/import is scoped to a configured remote profile; surface-wide commands are conveniences over profiles.
+- **Surface != acquisition source:** an X profile remains an X profile whether evidence came from the official API, an account archive, or another explicit acquisition mechanism.
+- **Adapter/importer isolation:** surface-specific wire/archive concepts stay behind acquisition boundaries unless they represent genuinely shared semantics.
 - **Three evidence layers:** raw remote evidence, normalized corpus objects, and derived/indexed views remain distinguishable.
 - **Rebuildable indexes:** SQLite/search indexes and caches are disposable projections, never the only copy of corpus data.
 - **Direct Rust integrations:** surface adapters talk to remote APIs directly from Rust. External platform CLIs such as `xurl` are not runtime dependencies.
@@ -49,7 +52,8 @@ MCP comes after the corpus and query boundaries are stable. It is a projection o
 
 - `sociarium-core` — surface-independent social ontology and identifiers.
 - `sociarium-adapter` — adapter traits, capabilities, sync batches, and adapter errors.
-- `sociarium-adapter-x` — first surface adapter; native X OAuth2/PKCE, HTTP acquisition, cursor semantics, token envelopes, and normalization live here.
+- `sociarium-adapter-x` — optional official X API adapter; native OAuth2/PKCE, HTTP acquisition, cursor semantics, token envelopes, and normalization live here.
+- `sociarium-import-x-archive` — active M0 zero-cost importer for first-party X account archives (planned in #8).
 - `sociarium-config` — non-secret corpus/profile configuration plus generic per-surface settings.
 - `sociarium-credentials` — profile-scoped credential-store abstraction with an in-memory test backend and Windows Credential Manager backend.
 - `sociarium-store` — durable repository layout and persistence boundary.
@@ -106,7 +110,7 @@ cargo run -p sociarium-cli --locked -- --config sociarium.toml config check
 cargo run -p sociarium-cli --locked -- --config sociarium.toml profiles list
 ```
 
-The intended Windows authorization path is:
+The optional paid official-API Windows authorization path is:
 
 ```text
 cargo run -p sociarium-cli --locked -- --config sociarium.toml auth login x-main
@@ -115,7 +119,7 @@ cargo run -p sociarium-cli --locked -- --config sociarium.toml auth status x-mai
 
 The CLI prints the X authorization URL, validates the loopback callback, exchanges the authorization code, and stores the resulting token envelope in Windows Credential Manager. Subsequent syncs load and refresh that profile's credential automatically.
 
-The intended synchronization/query path is:
+The optional paid official-API synchronization/query path is:
 
 ```text
 cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS_ROOT> sync x-main
@@ -123,7 +127,7 @@ cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts list --profi
 cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts search sociarium --profile x-main
 ```
 
-These live commands describe the M0 path. Run the profile-aware offline preflight before authorizing X; after it reports `READY`, the next boundary is the deliberate live Windows/X smoke test.
+These commands describe the optional paid API path, not the active zero-cost M0 gate. The active M0 CLI target is `sociarium --corpus <CORPUS_ROOT> import x-archive <ZIP_OR_DIR> --profile x-main` (#8).
 
 `SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
 
@@ -159,7 +163,7 @@ cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS
 
 Dependency updates should deliberately refresh `Cargo.lock` and then pass the full matrix. See ADR 0005 for the MSRV and dependency-resolution policy.
 
-Live X synchronization requires a registered X Developer App plus user authorization and whatever current API credits/entitlement X requires. Unit tests and normalization fixtures do not require live X credentials or paid API access.
+Official live X synchronization requires a registered X Developer App plus user authorization and paid API credits/entitlement. Zero-cost M0 does not require that path; it uses X's first-party downloadable account archive instead.
 
 ## License
 
