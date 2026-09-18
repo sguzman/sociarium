@@ -21,14 +21,11 @@ The cursor is intentionally opaque outside the adapter. Core synchronization cod
 
 A first synchronization can only acquire history that the remote surface currently exposes. Durable local preservation does not imply unlimited retrospective remote access.
 
-For the existing pre-atlas X implementation, `/2/users/:id/tweets` exposes a bounded recent user-post timeline (currently approximately the most recent 3,200 Posts). Therefore:
+The pre-Atlas X implementation was designed around a bounded-history assumption inherited from older X/Twitter behavior. Surface Atlas research on 2026-09-18 found that X Help still documents a 3,200-post bound for the **profile UI**, but the current `GET /2/users/{id}/tweets` reference does not state the same total-history ceiling.
 
-- the first X traversal bootstraps the retrievable recent window, not necessarily the profile's complete lifetime history;
-- a terminal first traversal means Sociarium exhausted the currently exposed timeline window, not that no older Posts have ever existed;
-- once the initial traversal completes, the durable `since_id` high-water mark supports forward incremental continuity;
-- later X archive-import or broader historical-acquisition paths can add older evidence without redefining existing acquisitions.
+Accordingly, future live X work must treat the API's lifetime-history ceiling as **unknown until verified**. A terminal traversal proves only that the chosen acquisition source has no further page under the observed contract; it must not be translated into "account fully archived" without source-specific coverage evidence.
 
-Coverage limits belong to adapter/source provenance and must not be hidden behind a generic claim such as "account fully archived."
+The durable `since_id` model remains useful for forward incremental continuity if/when the official API backend is resumed. Archive/import or other historical sources can add older evidence without redefining existing acquisitions.
 
 ## Pagination is not incremental state
 
