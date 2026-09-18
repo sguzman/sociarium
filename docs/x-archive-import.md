@@ -1,6 +1,10 @@
-# X archive import runbook
+# X archive import runbook (paused implementation path)
 
-This is the active zero-cost M0 validation path.
+This document preserves the X archive-import implementation path developed before the Surface Atlas pivot.
+
+**It is not the active project milestone. Do not resume this work merely because the code/runbook exists.**
+
+Sociarium is currently in R0/R1 research mode. X archive import should be reconsidered only after the X surface dossier compares it against the official API, public web surface, and authorized first-party private protocol as acquisition sources.
 
 X's first-party account archive is requested from the normal X account settings and is separate from the paid Developer API. X documents the archive as machine-readable HTML/JSON and states that it includes profile information and the account's entire post history, plus additional account data.
 
