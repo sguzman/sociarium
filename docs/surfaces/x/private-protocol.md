@@ -102,7 +102,7 @@ Directly observed in Microsoft Edge 153:
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Followers/Following/Lists/Notifications operation families remain unobserved. Likes and Bookmarks are now directly observed under the current History UI. Likes is backed by GraphQL `Likes`; Bookmarks is backed by GraphQL `Bookmarks` and uses a distinct viewer-scoped request/response shape without an observed `userId` variable.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Following/Lists/Notifications operation families remain unobserved. Likes and Bookmarks are directly observed under the current History UI. Followers is also directly observed as GraphQL `Followers`, scoped by `userId`, returning `TimelineUser` entries with relationship state and explicit Top/Bottom termination in the bounded capture.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
@@ -123,6 +123,16 @@ The bookmarked-Post data uses GraphQL operation `Bookmarks`. Three observed page
 Unlike the directly observed Likes operation, Bookmarks did **not** include a `userId` request variable and returned through `data.bookmark_timeline_v2.timeline.instructions` rather than `data.user.result.timeline.timeline.instructions`. This strongly suggests authenticated-viewer scoping for the private bookmark collection, while the exact complete auth mechanism remains unresolved because the sanitized HAR hides ordinary Cookie/Authorization material.
 
 See [observations/2026-09-18-bookmarks.md](observations/2026-09-18-bookmarks.md).
+
+### Followers
+
+A 2026-09-18 direct capture established the GraphQL operation `Followers`, scoped by `userId`, returning `TimelineUser` entries through the familiar user timeline envelope.
+
+The small current follower set fit in one response. That response carried both `TimelineTerminateTimeline(direction=Top)` and `TimelineTerminateTimeline(direction=Bottom)` while also carrying Top/Bottom cursor objects. Sociarium therefore treats terminal instructions, not cursor presence alone, as authoritative pagination state.
+
+Returned user objects exposed stable `rest_id` values and `relationship_perspectives` including `followed_by`, `following`, blocking, and muting state.
+
+See [observations/2026-09-18-followers.md](observations/2026-09-18-followers.md).
 
 ## Technical promise
 
