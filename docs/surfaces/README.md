@@ -23,7 +23,7 @@ The human principal will supply the initial list. Do not guess or pad this table
 | X / Twitter | **Highest** | baseline desk-research dossier complete; direct first-party observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](x/README.md) |
 | Reddit | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial (Data API has Tier B-like paths) | 2026-09-18 | [dossier](reddit/README.md) |
 | Bluesky | unranked | baseline desk-research dossier complete; direct observation pending | **Tier A — Sovereign-friendly** | 2026-09-18 | [dossier](bluesky/README.md) |
-| Facebook | unranked | queued for baseline dossier | unknown | — | pending |
+| Facebook | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](facebook/README.md) |
 | YouTube | unranked | queued for baseline dossier | unknown | — | pending |
 | Quora | unranked | queued for baseline dossier | unknown | — | pending |
 
