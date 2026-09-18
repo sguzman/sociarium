@@ -9,18 +9,17 @@ The center of the system is the corpus, not any particular remote API.
 ## System boundary
 
 ```text
-remote surfaces
-    |
-    v
-surface adapters <------ operational credentials
-    |                         |
-    |                         v
-    |                  native credential store
-    |
-    +--> raw evidence
-    |
-    v
-normalization
+remote surfaces                 first-party exports
+    |                                  |
+    v                                  v
+surface adapters             archive/import sources
+    |                                  |
+    +-------------+--------------------+
+                  |
+                  +--> raw/source evidence
+                  |
+                  v
+             normalization
     |
     v
 durable corpus
@@ -33,6 +32,8 @@ durable corpus
 
 Remote surfaces own their live systems. Sociarium owns its acquired evidence and local representations. Credentials remain operational authority outside the corpus.
 
+A social **surface** and an **acquisition source** are different concepts. X is the surface whether evidence arrived through the official API or X's account archive. See ADR 0006.
+
 ## Core concepts
 
 ### Surface
@@ -41,11 +42,19 @@ A remote social system such as X, Reddit, Bluesky, Mastodon, or YouTube.
 
 The core stores a stable `SurfaceId`, but surface-specific API types remain in adapter crates.
 
+### Acquisition source
+
+A mechanism by which Sociarium obtains evidence about a social surface.
+
+Examples include a live remote API and a first-party account archive. Acquisition source is provenance, not identity: importing an X archive does not create a new surface or a second remote profile.
+
 ### Adapter
 
-A Rust implementation that understands one surface's authentication protocol, endpoints, pagination, rate limits, object semantics, and capability constraints.
+A Rust implementation for a live remote acquisition source. It understands one surface's authentication protocol, endpoints, pagination, rate limits, object semantics, and capability constraints.
 
 An adapter translates remote observations into generic records plus lossless or sufficiently rich surface-specific extensions. Persistent secret storage is not embedded in the adapter contract; orchestration supplies authenticated adapter instances after resolving profile-scoped credentials.
+
+Offline importers are separate acquisition implementations and do not need to implement the network-oriented `SocialAdapter` trait.
 
 ### Remote profile
 
@@ -63,8 +72,8 @@ A statement that a remote surface returned or exhibited some state at a particul
 
 Sociarium distinguishes authority by layer:
 
-- a remote surface is authoritative for what its API returned at acquisition time;
-- preserved raw evidence is authoritative for what Sociarium actually received;
+- the original acquisition source is authoritative for the source material it supplied at acquisition/import time;
+- preserved raw/source evidence is authoritative for what Sociarium actually received;
 - normalized records are Sociarium's typed interpretation of that evidence;
 - derived indexes, summaries, and agent views are disposable projections;
 - credential stores contain operational authority, not historical evidence.
@@ -103,8 +112,9 @@ M0 is read/acquisition only.
 The diagram is conceptual rather than a complete Cargo edge list. The important direction rules are:
 
 - `sociarium-core` does not depend on adapters, storage, CLI, MCP, or a particular surface;
-- `sociarium-adapter` defines generic acquisition behavior without depending on X;
-- surface adapters depend inward on generic adapter/core types;
+- `sociarium-adapter` defines live remote-adapter behavior without depending on X;
+- source-neutral acquisition envelopes should not require a network adapter;
+- surface adapters and importers depend inward on generic acquisition/core types;
 - `sociarium-credentials` stores opaque secret bytes keyed by generic profile identity and does not know X token semantics;
 - `sociarium-sync` orchestrates adapters and durable storage but does not parse surface-specific cursors;
 - `sociarium-search` is a projection over durable corpus records and remains disposable;
