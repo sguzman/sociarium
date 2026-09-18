@@ -1,169 +1,182 @@
 # Sociarium
 
-Sociarium is a Rust-native, user-sovereign social-data substrate that synchronizes selected profiles across arbitrary social surfaces into a durable, provenance-preserving, Git-versioned local corpus, with first-class CLI, search, and agent interfaces.
+Sociarium is a documentation-first, user-sovereign social-data project.
 
-> **Surfaces are adapters, not ontology. Profiles are first-class synchronization scopes. The local corpus is the durable record.**
+Its long-term software goal is a Rust-native substrate that can preserve selected social data in a durable, provenance-rich local corpus. Its **current primary artifact is the Surface Atlas**: a forensic map of how social platforms let an authorized user access, export, synchronize, and preserve their own data.
 
-## Status
+> **Research the surface before implementing the adapter. The platform's preferred developer interface is not the ontology of the platform.**
 
-Sociarium is in M0. The first concrete surface is X, but X does not define the core model.
+## Current phase: R0 — Surface Atlas
 
-A complete official-X-API backend has been implemented and CI-verified, including OAuth2/PKCE, Windows Credential Manager persistence, direct Rust acquisition, crash-resumable sync, durable acquisition bundles, and local search. That path is preserved as an **optional paid backend** on the frozen `m0-rc1` candidate.
+Implementation is intentionally frozen as the active priority.
 
-X's current official API is prepaid pay-per-use. Sociarium's M0 product constraint is now **zero paid X API spend**.
+The immediate project task is to enumerate the social surfaces the human principal actually cares about, then investigate each one before choosing more implementation targets.
 
-The active M0 path is issue #8: import the account owner's first-party X data archive into the same durable corpus without an X Developer App, API credits, passwords, cookies, or session tokens.
+For every surface, Sociarium asks:
+
+> What mechanisms exist for a user to acquire, preserve, query, and continuously observe their own data, and how much control does the surface retain over each mechanism?
+
+Research covers documented APIs, self-data APIs, official exports, public web representations, first-party private web/mobile protocols, live channels, identifiers, pagination/history limits, authentication, pricing, rate limits, portability, protocol drift, and per-data-class access.
+
+A high-quality dossier is a successful deliverable even if no adapter is ever written.
+
+Start here:
+
+- [Surface Atlas](docs/surfaces/README.md)
+- [Surface research doctrine](docs/surface-research-doctrine.md)
+- [Surface access tiers](docs/surface-access-tiers.md)
+- [Surface dossier template](docs/surfaces/TEMPLATE.md)
+- [ADR 0007: documentation-first Surface Atlas](docs/decisions/0007-documentation-first-surface-atlas.md)
+
+## Access tiers
+
+Sociarium classifies the **access relationship**, not whether a platform is socially good or bad.
+
+- **Tier A — Sovereign-friendly:** strong, practical, user-controlled acquisition paths.
+- **Tier B — Workable:** imperfect but usable without recurring payment, degradation, or protocol archaeology as the normal operating model.
+- **Tier C — Adversarial:** sanctioned interfaces materially obstruct useful self-data access. Sociarium investigates the private first-party protocol rather than normalizing repeated manual groveling.
+- **Tier D — Inaccessible:** useful acquisition currently appears to require crossing a meaningful authorization/security boundary or accepting constraints that make implementation unjustifiable.
+
+A site-wide tier is only a summary. Dossiers also classify individual data classes such as posts, likes, bookmarks, relationships, media, and private messages.
+
+## Adversarial does not mean passive
+
+When a platform exposes useful functionality to its own authorized web/mobile client while withholding or paywalling equivalent developer access, the shipped first-party client becomes a research object.
+
+Sociarium may document:
+
+- endpoints and request families;
+- GraphQL/RPC operation names;
+- request and response schemas;
+- stable IDs;
+- pagination cursors;
+- feature flags;
+- authentication boundaries;
+- WebSocket/SSE/live channels;
+- protocol drift across dated observations.
+
+This is protocol archaeology, not indiscriminate security bypass. Sociarium does not require credential theft, impersonation, or defeating meaningful access controls to obtain data the operator is not authorized to access.
+
+## Documentation is first-class project state
+
+Surface claims are provenance-heavy and time-bounded.
+
+Sociarium distinguishes:
+
+1. documented facts;
+2. directly observed behavior;
+3. inference;
+4. unknowns.
+
+Prefer a dated statement such as:
+
+> Observed 2026-09-18: the first-party web client used operation X with cursor Y for the authenticated user's own timeline.
+
+over a timeless assertion that a private protocol will always work that way.
+
+Research history should remain visible when a platform changes.
+
+## Existing software substrate
+
+Substantial Rust infrastructure already exists and is preserved.
+
+It includes:
+
+- surface-independent profile/Post ontology;
+- source-neutral acquisition envelopes;
+- durable raw + normalized acquisition bundles;
+- stable remote-profile binding;
+- rebuildable SQLite/FTS search;
+- profile-scoped synchronization and crash recovery;
+- configuration and CLI boundaries;
+- Windows Credential Manager integration;
+- a direct Rust X OAuth2/PKCE + API adapter;
+- work toward first-party X archive import.
+
+The X official API candidate is preserved on `m0-rc1`. Current X API commercial terms made it a poor basis for the project's active milestone, which is one reason the research-first doctrine now exists.
+
+Existing code is **reusable substrate and historical implementation evidence**. It does not obligate Sociarium to keep coding X, complete the archive path immediately, or choose any next surface before research.
+
+## Core invariants
+
+- **Surface != acquisition source.** A social surface may expose an official API, archive, public representation, private first-party protocol, or several of these simultaneously.
+- **Research before new implementation.** New surface-specific code normally requires a current dossier and implementation-admission decision.
+- **Local durability.** Once evidence is acquired, Sociarium can preserve it independently of the remote surface.
+- **Profiles are first-class.** No hidden global current-account singleton.
+- **Stable IDs beat mutable handles.** Remote identity is based on durable surface IDs where available.
+- **Provenance survives normalization.** Raw/source evidence, normalized records, and derived views remain distinct.
+- **Indexes are disposable.** Search/cache projections are rebuildable from durable corpus data.
+- **Credentials are not corpus data.** Passwords, cookies, bearer tokens, refresh tokens, and session secrets do not belong in the public research repository or Git-tracked corpus.
+- **Private data is not automatically publishable.** Secret-free evidence can still contain sensitive account data.
+- **Git is history/transport, not the database.**
+- **No site is owed an adapter.** Documentation may be the correct final result for a surface.
+
+## Research and implementation workflow
 
 ```text
-X account archive ZIP/directory
-  -> detect/parse archive evidence
-  -> normalize self-owned profile + authored Posts
-  -> durable corpus
-  -> stable profile binding
-  -> rebuildable SQLite/FTS index
-  -> posts list/search
+enumerate surfaces
+        ↓
+official/documented research
+        ↓
+public technical research
+        ↓
+first-party protocol observation where warranted
+        ↓
+per-data-class access matrix
+        ↓
+dated tier assessment
+        ↓
+acquisition candidates
+        ↓
+implementation admission decision
+        ↓
+only then: adapter/importer work
 ```
 
-The official API backend remains useful later when an operator deliberately chooses paid live synchronization, but it is not required for zero-cost M0.
+The Surface Atlas continues to matter after implementation because access policies, prices, APIs, exports, and private protocols change.
 
-Build resolution is reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
+## Repository map
 
-MCP comes after the corpus and query boundaries are stable. It is a projection of Sociarium, not Sociarium's internal API.
+Research:
 
-## Architectural invariants
+- `docs/surfaces/` — per-surface atlas and dossiers.
+- `docs/surface-research-doctrine.md` — evidence/provenance and investigative rules.
+- `docs/surface-access-tiers.md` — Tier A/B/C/D definitions.
+- `docs/decisions/` — architectural/research decisions.
 
-- **Local durability:** once a remote observation is acquired, Sociarium can preserve it independently of the remote surface.
-- **No hidden singletons:** no assumption that there is one surface, one profile, or one real-world identity.
-- **Profile-first acquisition:** synchronization/import is scoped to a configured remote profile; surface-wide commands are conveniences over profiles.
-- **Surface != acquisition source:** an X profile remains an X profile whether evidence came from the official API, an account archive, or another explicit acquisition mechanism.
-- **Adapter/importer isolation:** surface-specific wire/archive concepts stay behind acquisition boundaries unless they represent genuinely shared semantics.
-- **Three evidence layers:** raw remote evidence, normalized corpus objects, and derived/indexed views remain distinguishable.
-- **Rebuildable indexes:** SQLite/search indexes and caches are disposable projections, never the only copy of corpus data.
-- **Direct Rust integrations:** surface adapters talk to remote APIs directly from Rust. External platform CLIs such as `xurl` are not runtime dependencies.
-- **Credential separation:** bearer credentials are operational secret state outside the Git-tracked corpus and configuration.
-- **Source/corpus separation:** the Sociarium software checkout and the operator's durable social corpus are separate authority domains.
-- **Private data is not the same as a credential:** a secret-free corpus can still contain authorized/private observations and should not be assumed safe to publish.
-- **Git is history/transport:** Git may version a corpus; it is not the persistence/query API and GitHub is not corpus authority.
-- **Best available normalized value:** portable fields such as `Post.text` should use the best complete value the acquired source exposes, not a known truncated preview.
-- **Conspicuous writes:** reading/querying local data is broad; remote mutation is a separate capability boundary.
-- **Inspectable repository:** the corpus should remain understandable even if the Sociarium executable no longer runs.
-
-## Workspace
+Software architecture:
 
 - `sociarium-core` — surface-independent social ontology and identifiers.
-- `sociarium-adapter` — adapter traits, capabilities, sync batches, and adapter errors.
-- `sociarium-adapter-x` — optional official X API adapter; native OAuth2/PKCE, HTTP acquisition, cursor semantics, token envelopes, and normalization live here.
-- `sociarium-import-x-archive` — active M0 zero-cost importer for first-party X account archives (planned in #8).
-- `sociarium-config` — non-secret corpus/profile configuration plus generic per-surface settings.
-- `sociarium-credentials` — profile-scoped credential-store abstraction with an in-memory test backend and Windows Credential Manager backend.
-- `sociarium-store` — durable repository layout and persistence boundary.
-- `sociarium-sync` — generic profile-scoped sync orchestration and crash-resume rules.
-- `sociarium-search` — disposable SQLite/FTS projection rebuilt from durable acquisitions.
-- `sociarium-cli` — human-facing auth, sync, index, and query orchestration.
+- `sociarium-acquisition` — source-neutral acquisition evidence/envelopes.
+- `sociarium-adapter` — live remote-adapter contract.
+- `sociarium-adapter-x` — existing optional X API adapter.
+- `sociarium-import-x-archive` — in-progress X archive importer preserved from the pre-atlas phase.
+- `sociarium-config` — non-secret configuration.
+- `sociarium-credentials` — profile-scoped secret-storage boundary.
+- `sociarium-store` — durable corpus persistence.
+- `sociarium-sync` — synchronization orchestration.
+- `sociarium-search` — rebuildable SQLite/FTS projection.
+- `sociarium-cli` — composition root.
 
-Planned later: MCP, media acquisition, additional adapters, broader X corpus objects, and explicit cross-profile identity resolution.
+## Software repo versus corpus/evidence
 
-## Software repo versus corpus repo
+`sguzman/sociarium` is public project source and public research documentation.
 
-`sguzman/sociarium` is the software source repository. Real social data belongs in a separate operator-owned corpus directory/repository.
+Real social data, unsanitized browser captures, HAR files, cookies, authorization headers, private messages, and other account-sensitive evidence do **not** belong in this public repository.
 
-```text
-sguzman/sociarium/        # Rust software, docs, tests
-<operator corpus>/        # acquisitions, normalized records, provenance, local config
-```
+A future private/local evidence vault may preserve raw forensic captures when needed. Public dossiers should contain sanitized structural observations and enough provenance to reproduce or verify them without leaking live authority.
 
-Initialize a real corpus explicitly outside the public software checkout:
+## Roadmap
 
-```text
-cargo run -p sociarium-cli --locked -- corpus init <CORPUS_ROOT>
-```
+The project no longer treats “finish the next adapter” as the default definition of progress.
 
-Initialization writes a versioned `sociarium-corpus.json` marker, creates the durable layout and non-secret `sociarium.toml` template, and installs corpus-local Git ignore rules for disposable indexes/derived state and `.pending-*` staging directories. It does not run `git init`, create commits, or push anywhere.
+See [docs/roadmap.md](docs/roadmap.md) for the research-first milestone sequence.
 
-If a corpus is pushed to a Git remote, private visibility is the conservative default because future capabilities may include private/authorized observations such as bookmarks. Credentials remain forbidden from the corpus either way.
+## Development status
 
-## Configuration
+The existing Rust workspace remains buildable project state. Code maintenance, security fixes, and preservation work may continue when needed, but new surface-specific feature implementation is not the active priority during R0.
 
-For source-tree development, copy [`sociarium.example.toml`](sociarium.example.toml) to the repository-root `sociarium.toml`. That source-root filename is ignored by default so machine/profile-local development configuration is not accidentally published. It is still **not a secret store**.
-
-```toml
-schema_version = 1
-
-[surfaces.x]
-client_id = "replace-with-your-x-app-client-id"
-redirect_uri = "http://127.0.0.1:49152/oauth/x/callback"
-
-[[profiles]]
-id = "x-main"
-surface = "x"
-handle = "sguzman"
-ownership = "self_owned"
-enabled = true
-```
-
-Bearer credentials and client secrets do not belong in this file.
-
-Validate configuration and inspect profiles:
-
-```text
-cargo run -p sociarium-cli --locked -- --config sociarium.toml config check
-cargo run -p sociarium-cli --locked -- --config sociarium.toml profiles list
-```
-
-The optional paid official-API Windows authorization path is:
-
-```text
-cargo run -p sociarium-cli --locked -- --config sociarium.toml auth login x-main
-cargo run -p sociarium-cli --locked -- --config sociarium.toml auth status x-main
-```
-
-The CLI prints the X authorization URL, validates the loopback callback, exchanges the authorization code, and stores the resulting token envelope in Windows Credential Manager. Subsequent syncs load and refresh that profile's credential automatically.
-
-The optional paid official-API synchronization/query path is:
-
-```text
-cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS_ROOT> sync x-main
-cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts list --profile x-main
-cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts search sociarium --profile x-main
-```
-
-These commands describe the optional paid API path, not the active zero-cost M0 gate. The active M0 CLI target is `sociarium --corpus <CORPUS_ROOT> import x-archive <ZIP_OR_DIR> --profile x-main` (#8).
-
-`SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
-
-## Documentation
-
-Start with:
-
-- [`docs/architecture.md`](docs/architecture.md)
-- [`docs/data-model.md`](docs/data-model.md)
-- [`docs/adapters.md`](docs/adapters.md)
-- [`docs/configuration.md`](docs/configuration.md)
-- [`docs/synchronization.md`](docs/synchronization.md)
-- [`docs/security-and-credentials.md`](docs/security-and-credentials.md)
-- [`docs/repository-format.md`](docs/repository-format.md)
-- [`docs/search-index.md`](docs/search-index.md)
-- [`docs/roadmap.md`](docs/roadmap.md)
-- [`docs/x-live-smoke-test.md`](docs/x-live-smoke-test.md)
-- [`docs/decisions/`](docs/decisions/) for architectural decision records
-- [`AGENTS.md`](AGENTS.md) for the implementation contract
-
-## Development
-
-Current CI enforces formatting, strict clippy, workspace tests, native Windows compilation/tests, and the declared Rust 1.85 minimum supported version against the committed lockfile.
-
-```text
-cargo fmt --all -- --check
-cargo clippy --workspace --all-targets --locked -- -D warnings
-cargo test --workspace --locked
-cargo +1.85.0 check --workspace --all-targets --locked
-cargo run -p sociarium-cli --locked -- doctor
-cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS_ROOT> doctor --profile x-main
-```
-
-Dependency updates should deliberately refresh `Cargo.lock` and then pass the full matrix. See ADR 0005 for the MSRV and dependency-resolution policy.
-
-Official live X synchronization requires a registered X Developer App plus user authorization and paid API credits/entitlement. Zero-cost M0 does not require that path; it uses X's first-party downloadable account archive instead.
+The declared MSRV remains Rust 1.85 and CI continues to protect the existing substrate.
 
 ## License
 
