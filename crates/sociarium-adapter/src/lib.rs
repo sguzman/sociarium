@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use sociarium_core::{NormalizedRecord, SurfaceId, TrackedProfile};
+use sociarium_core::{SurfaceId, TrackedProfile};
 use thiserror::Error;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
@@ -17,20 +17,10 @@ pub enum Capability {
     RemoteWrites,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct RawEvidence {
-    pub media_type: String,
-    pub bytes: Vec<u8>,
-    pub suggested_path: Option<String>,
-}
+pub use sociarium_acquisition::{AcquisitionBatch, RawEvidence};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SyncBatch {
-    pub records: Vec<NormalizedRecord>,
-    pub raw: Vec<RawEvidence>,
-    /// Opaque adapter-owned durable checkpoint written only after this batch is durable.
-    pub next_cursor: Option<String>,
-}
+/// Backward-compatible live-adapter name for the source-neutral acquisition envelope.
+pub type SyncBatch = AcquisitionBatch;
 
 #[derive(Debug, Error)]
 pub enum AdapterError {
