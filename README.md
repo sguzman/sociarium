@@ -6,7 +6,7 @@ Its long-term software goal is a Rust-native substrate that can preserve selecte
 
 > **Research the surface before implementing the adapter. The platform's preferred developer interface is not the ontology of the platform.**
 
-## Current phase: R1 complete — R2 next
+## Current phase: R2 active — X direct observation
 
 The initial Surface Atlas inventory and baseline dossiers are complete for:
 
@@ -19,7 +19,9 @@ The initial Surface Atlas inventory and baseline dossiers are complete for:
 
 New surface-specific implementation remains intentionally frozen. Existing code may receive preservation/security/build fixes, but unfinished adapter/importer work does not define the agenda.
 
-The next research phase is **R2 — direct first-party observation / adversarial protocol archaeology**, starting with X because it is the human principal's highest-priority surface.
+**R2 — direct first-party observation / adversarial protocol archaeology is active now.** X is first because it is the human principal's highest-priority surface.
+
+Active execution log: [R2/X — direct first-party observation of authorized web client](https://github.com/sguzman/sociarium/issues/12).
 
 Completed execution logs:
 
