@@ -1,56 +1,40 @@
 # Roadmap
 
-## M0 — X vertical slice
+## M0 — zero-cost X archive vertical slice
 
-Goal: prove the architecture with the smallest end-to-end useful path.
+Goal: prove Sociarium's acquisition/preservation architecture without requiring the operator to purchase X API credits.
 
-Acceptance target:
+Hard product constraint: **M0 must cost $0 in X API spend.**
+
+The official X API backend is already implemented and CI-verified (issues #1–#7) and is preserved as an optional paid backend. X's current official developer model is pay-per-use, so its live smoke test is not an M0 completion requirement.
+
+Active acceptance target (#8):
 
 ```text
-configured X profile
-  -> Rust-native authentication/API client
-  -> acquire own posts
-  -> preserve raw response evidence
-  -> normalize profile/posts
+first-party X account archive ZIP/directory
+  -> inspect/detect archive layout
+  -> identify self-owned X profile
+  -> preserve source evidence
+  -> normalize profile + authored Posts
   -> write durable corpus files
+  -> establish/validate stable remote profile binding
   -> build/rebuild local search index
   -> query from CLI
 ```
 
-Repository implementation status: **repository-side M0 complete; live validation pending**.
+M0 must not require:
 
-The pre-live audit produced issues #2–#7, and all are now resolved and CI-verified:
+- an X Developer App;
+- X API credits;
+- a paid third-party data provider;
+- the user's X password, cookies, bearer token, or browser session;
+- undocumented private X protocols.
 
-- profile-aware no-network preflight (#2);
-- bounded/resilient OAuth loopback callback (#3);
-- non-secret-by-construction X/OAuth remote diagnostics (#4);
-- current X timeline wire/full-text/relationship fidelity (#5);
-- explicit separate Git-safe operator corpus initialization (#6);
-- durable stable remote-profile identity binding (#7).
+Architectural consequence: **surface and acquisition source are different axes**. The surface remains `x`; evidence may come from the official API, X's account archive, or later acquisition mechanisms. Offline archive import should be implemented as an importer/acquisition source rather than pretending the archive is a new social surface.
 
-The final M0 gate is one live end-to-end smoke test on Windows with a registered X Developer App and authorized account. It must exercise the real profile-aware preflight, native OAuth login, Windows Credential Manager persistence, acquisition into the dedicated corpus, stable remote identity binding, durable incremental sync state, index rebuild/local query, and a second incremental sync against real X data.
+Zero-cost M0 is complete when a real account archive imports successfully on Windows into a dedicated corpus, preserves raw/source evidence plus normalized Posts, establishes/validates stable profile identity, rebuilds the disposable search index, and returns the user's real Posts via local list/search.
 
-Current M0 implementation includes:
-
-- generic profile and per-surface non-secret configuration;
-- explicit `sociarium corpus init` boundary for operator-owned Git-safe corpora;
-- profile-aware local no-network preflight with native credential round-trip;
-- durable stable remote-profile binding reconstructed from corpus evidence;
-- native OAuth2 Authorization Code + S256 PKCE for X;
-- profile-scoped Windows Credential Manager persistence;
-- refresh-token rollover and automatic refresh before sync;
-- direct Rust X API acquisition;
-- raw + normalized acquisition bundles;
-- generic `Post` reply/quote relationship fields and X normalization support;
-- durable incremental/cursor state with crash recovery;
-- rebuildable SQLite/FTS index;
-- CLI auth, sync, list, and search commands;
-- committed reproducible `Cargo.lock`, resolver 3, and explicit MSRV-compatible dependency choices;
-- Linux stable, native Windows, and Rust 1.85 locked CI coverage.
-
-M0 corpus-history claim: the first X sync can only bootstrap the history the current user-post timeline exposes (approximately the most recent 3,200 Posts). Sociarium's durable value is preserving acquired evidence and maintaining forward incremental continuity; complete older lifetime history requires another acquisition source such as an export/import or broader remote archive access.
-
-Explicitly not M0: posting, deleting, arbitrary public-X search, GUI, MCP, cross-platform identity resolution, additional adapters, deep thread/context acquisition, and full repost/reblog ontology.
+The official API candidate remains frozen at `m0-rc1` for later deliberate paid validation.
 
 ## M1 — X corpus depth
 
