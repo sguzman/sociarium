@@ -13,8 +13,9 @@ use sociarium_adapter_x::{XAdapter, XOAuthConfig, XOAuthSession, XStoredTokens};
 use sociarium_config::SociariumConfig;
 use sociarium_core::TrackedProfile;
 use sociarium_credentials::{CredentialKey, CredentialStore, NativeCredentialStore};
+use sociarium_import_x_archive::import_directory as import_x_archive_directory;
 use sociarium_search::{PostHit, SearchIndex};
-use sociarium_store::{CorpusStore, ProfileBinding};
+use sociarium_store::{CorpusStore, ProfileBinding, StoreError};
 use sociarium_sync::{SyncOptions, sync_profile};
 use url::Url;
 
@@ -71,6 +72,11 @@ enum Command {
         #[command(subcommand)]
         command: AuthCommand,
     },
+    /// Import offline first-party social data into the durable corpus.
+    Import {
+        #[command(subcommand)]
+        command: ImportCommand,
+    },
     /// Synchronize one configured profile through its surface adapter.
     Sync {
         /// Local profile id from sociarium.toml.
@@ -120,6 +126,21 @@ enum AuthCommand {
     Status { profile: String },
     /// Delete the profile's persisted credential from the native credential store.
     Logout { profile: String },
+}
+
+#[derive(Debug, Subcommand)]
+enum ImportCommand {
+    /// Import a first-party X account archive from an extracted directory.
+    XArchive {
+        /// Extracted X archive root or its data/ directory.
+        path: PathBuf,
+        /// Local profile id from sociarium.toml.
+        #[arg(long)]
+        profile: String,
+        /// Skip rebuilding the disposable search index after import.
+        #[arg(long)]
+        no_index: bool,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -179,6 +200,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Command::Auth {
             command: AuthCommand::Logout { profile },
         } => auth_logout(&cli.config, &profile)?,
+        Command::Import {
+            command:
+                ImportCommand::XArchive {
+                    path,
+                    profile,
+                    no_index,
+                },
+        } => import_x_archive(&cli.config, &cli.corpus, &path, &profile, no_index)?,
         Command::Sync {
             profile,
             no_index,
@@ -599,6 +628,66 @@ fn auth_logout(config_path: &Path, profile_id: &str) -> Result<(), Box<dyn Error
         deleted,
         env::var_os(X_ACCESS_TOKEN_ENV).is_some() && profile.surface.as_str() == "x"
     );
+    Ok(())
+}
+
+fn import_x_archive(
+    config_path: &Path,
+    corpus: &Path,
+    archive_path: &Path,
+    profile_id: &str,
+    no_index: bool,
+) -> Result<(), Box<dyn Error>> {
+    let config = SociariumConfig::load(config_path)?;
+    let configured = configured_profile(&config, profile_id)?;
+    let store = CorpusStore::open_initialized(corpus)?;
+    let profile = profile_with_durable_binding(configured, &store)?;
+
+    let imported = import_x_archive_directory(archive_path, &profile, Utc::now())?;
+    let acquisition_id = imported.batch.records[0]
+        .observation()
+        .acquisition_id
+        .clone();
+
+    let persisted = match store.persist_acquisition_batch(
+        &profile,
+        &imported.batch,
+        "x_account_archive",
+    ) {
+        Ok(persisted) => {
+            println!(
+                "imported X archive acquisition {} -> {}",
+                acquisition_id,
+                persisted.acquisition_dir.display()
+            );
+            true
+        }
+        Err(StoreError::AcquisitionExists(existing)) if existing == acquisition_id => {
+            println!("X archive acquisition {existing} is already durable; no duplicate written");
+            false
+        }
+        Err(error) => return Err(error.into()),
+    };
+
+    println!(
+        "X archive account: @{} remote_id={}",
+        imported.account_handle, imported.account_remote_id
+    );
+    println!(
+        "authored posts normalized: {}; retweets preserved only as raw evidence: {}",
+        imported.post_count, imported.skipped_retweets
+    );
+
+    if !no_index {
+        let stats = SearchIndex::for_corpus(corpus).rebuild()?;
+        println!(
+            "search index rebuilt: acquisitions={} records={} posts={}",
+            stats.acquisitions_scanned, stats.records_scanned, stats.posts_indexed
+        );
+    } else if persisted {
+        println!("search index rebuild skipped by --no-index");
+    }
+
     Ok(())
 }
 
