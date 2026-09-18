@@ -10,7 +10,7 @@ The durable research program is the [Surface Atlas](surfaces/README.md).
 
 ## R0 — Surface inventory
 
-**Active milestone. No new surface-specific implementation unless the human principal explicitly overrides the research freeze.**
+**Complete.**
 
 Goal: enumerate the social surfaces the human principal actually cares about.
 
@@ -30,6 +30,8 @@ R0 is complete when the initial inventory exists and the human principal agrees 
 **R0 is not complete because code was written.**
 
 ## R1 — Surface Atlas baseline dossiers
+
+**Complete for the initial six-surface inventory as of 2026-09-18.**
 
 Investigate each R0 surface using the [research doctrine](surface-research-doctrine.md) and [access tiers](surface-access-tiers.md).
 
@@ -69,6 +71,8 @@ Each dossier gets:
 Documentation alone is a valid completed result.
 
 ## R2 — Adversarial protocol archaeology
+
+**Next research phase. X is first because it is the operator's highest-priority surface.**
 
 For Tier C surfaces, investigate the protocol actually shipped to the authorized user when sanctioned developer interfaces are materially inadequate.
 
