@@ -7,7 +7,7 @@
 - Last reviewed: 2026-09-18
 - Operator priority: **highest**
 - Overall access tier: **provisional Tier C — Adversarial**
-- Confidence: high for official API/export facts; medium for the undocumented first-party protocol until direct observation is added
+- Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, and Likes; other undocumented operation families remain medium-confidence until observed
 
 ## Executive summary
 
@@ -19,7 +19,7 @@ X separately offers an official account archive through normal account settings.
 
 X Help currently says the ordinary profile timeline displays up to 3,200 of the user's most recent posts and directs users to the archive for older history. The current official `GET /2/users/{id}/tweets` API reference does **not** state that same 3,200 ceiling. Sociarium therefore treats the current API historical ceiling as **unknown pending direct/official evidence** rather than inheriting an older assumption.
 
-Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`, with operations such as `UserTweets`, `TweetDetail`, `Bookmarks`, `Likes`, `Following`, and `Followers`. These sources also describe query IDs and feature sets as client-build-sensitive. This is currently **public secondary technical evidence**, not yet a direct Sociarium observation.
+Public technical reverse-engineering projects independently document a substantial first-party web protocol under `x.com/i/api/graphql/{queryId}/{operationName}`. Sociarium now has direct current observations for `UserOriginalsTimeline`, `UserByScreenName`, `TweetDetail`, `HomeTimeline`, and `Likes`, including cursor pagination and a profile terminal-history instruction. Bookmarks, relationships, Lists, and Notifications still rely on secondary evidence until directly observed.
 
 X's current Terms of Service expressly prohibit scraping and automated access through interfaces other than X's currently available published interfaces unless separately permitted. X's April 2026 Automation Rules also say not to use non-API automation such as scripting the X website. That creates a major implementation constraint even where the private protocol is technically observable.
 
@@ -96,6 +96,12 @@ Weaknesses:
 - current X terms/policies materially constrain non-published automated access.
 
 Status: **research target, not implementation-admitted.**
+
+### Current Likes UI
+
+Direct observation on 2026-09-18 found that X Web currently exposes the operator's Likes under **History → Likes** at `/i/history/likes`, rather than as the older profile Likes tab. The underlying data request remains the GraphQL `Likes` operation.
+
+See [the Likes observation](observations/2026-09-18-likes.md).
 
 ## Current R2 status
 
