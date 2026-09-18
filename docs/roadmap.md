@@ -2,13 +2,15 @@
 
 Sociarium is now a **documentation-first digital-forensics and social-surface access project**.
 
-Code is downstream of research. The project does not measure progress primarily by adapter count.
+Code is downstream of research. The project does not measure progress primarily by adapter count. During the research milestones, the main unit of progress is durable knowledge: inventories, dossiers, observations, access matrices, protocol maps, and dated classifications.
+
+The project charter is [project-charter.md](project-charter.md).
 
 The durable research program is the [Surface Atlas](surfaces/README.md).
 
 ## R0 — Surface inventory
 
-**Active milestone. No new surface-specific implementation.**
+**Active milestone. No new surface-specific implementation unless the human principal explicitly overrides the research freeze.**
 
 Goal: enumerate the social surfaces the human principal actually cares about.
 
@@ -23,7 +25,7 @@ For each named surface, record only enough initial metadata to establish a resea
 - current research status;
 - provisional tier only when evidence already supports one.
 
-R0 is complete when the initial inventory exists and the human principal agrees that it reflects the sites worth investigating.
+R0 is complete when the initial inventory exists and the human principal agrees that it reflects the sites worth investigating. Issue #10 is the durable execution log for this phase.
 
 **R0 is not complete because code was written.**
 
