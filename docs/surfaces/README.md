@@ -2,7 +2,11 @@
 
 This directory is the primary research corpus for Sociarium.
 
+The governing project charter is [`../project-charter.md`](../project-charter.md).
+
 Sociarium does not begin with adapters. It begins by understanding how each social surface lets an authorized user access, preserve, and continuously observe their own data.
+
+During the Surface Atlas phases, progress is measured primarily in durable knowledge: inventories, dossiers, evidence, access matrices, protocol maps, dated classifications, and explicit unknowns. Adapter count is not the scorecard.
 
 ## Current phase
 
