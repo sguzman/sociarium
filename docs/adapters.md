@@ -51,9 +51,11 @@ Initial synchronization therefore has two separate concepts:
 - **bootstrap coverage:** the historical window the remote API currently makes retrievable;
 - **forward continuity:** observations Sociarium keeps acquiring and preserving after synchronization begins.
 
-For X, the user-post timeline currently exposes only a bounded recent history (approximately the most recent 3,200 Posts). A first X sync must therefore not be described as a complete lifetime account export. Once Sociarium is running incrementally, its local history can remain durable even as older remote timeline entries fall out of X's retrievable window.
+Historical note: earlier Sociarium work inherited the long-standing assumption that X's user-post API exposed approximately the most recent 3,200 Posts. The 2026-09-18 Surface Atlas research pass did not find that ceiling in the current `GET /2/users/{id}/tweets` reference. X Help still documents a 3,200-post bound for the ordinary **profile UI** and directs users to the archive for older history.
 
-Later archive-import or full-archive acquisition paths may fill older history when the operator has an export or current X access permits it. Those are additive acquisition sources; they do not change the authority model.
+Therefore the current API lifetime-history ceiling is now **unverified/unknown** rather than a core architectural fact. Any future X implementation must establish its actual retrievable history from current evidence before making completeness claims. See `docs/surfaces/x/official-api.md`.
+
+Archive/import paths remain additive acquisition sources; they do not change the authority model.
 
 ## Existing X adapter policy
 
@@ -83,6 +85,6 @@ The existing X adapter must preserve the best complete authored text the X paylo
 
 This requirement does **not** force M0 to normalize every rich-text entity or article feature. It is a fidelity rule for the already-existing portable `Post.text` field. Successful raw evidence remains available for later richer interpretation.
 
-The existing X adapter uses the remote `tweet.fields` parameter with `created_at,referenced_tweets,note_tweet`. It preserves supported reply/quote references, prefers full `note_tweet.text` when present, and explicitly sends `exclude=retweets` so reposts are not flattened into ordinary authored Posts before a portable repost relation exists.
+The existing pre-Atlas X adapter uses the historical remote names `referenced_tweets` and `note_tweet`. Current 2026-09-18 X reference material instead advertises names including `referenced_posts` and `note_post`. During the research freeze this is recorded as a compatibility question, not silently "fixed" in code. Any resumed implementation must verify the live wire contract first.
 
 X wire names remain X wire names. The remote API uses parameter/field names such as `tweet.fields`, `referenced_tweets`, and `note_tweet`; the fact that Sociarium's portable ontology calls the object a `Post` does not justify renaming remote protocol parameters.
