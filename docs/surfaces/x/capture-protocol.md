@@ -61,7 +61,7 @@ Save as a second private HAR.
 Use separate captures for:
 
 - Likes — current observed UI location: **History → Likes** (`/i/history/likes`);
-- Bookmarks — current History UI places Bookmarks beside Likes; capture separately;
+- Bookmarks — current observed UI location is the base **History** view (`/i/history`); capture separately;
 - Followers;
 - Following;
 - Lists;
