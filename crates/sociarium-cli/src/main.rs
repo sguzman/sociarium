@@ -251,10 +251,10 @@ fn doctor_profile(
     corpus: &Path,
     profile_id: &str,
 ) -> Result<(), Box<dyn Error>> {
-    let credential_store = NativeCredentialStore::new().map_err(|error| {
+    let credential_store = NativeCredentialStore::new().map_err(|_| {
         io::Error::new(
             io::ErrorKind::Unsupported,
-            format!("preflight credential store failed: {error}"),
+            "preflight credential store failed: native credential storage unavailable",
         )
     })?;
     let lines = profile_preflight(
@@ -346,10 +346,6 @@ fn profile_preflight(
         }
     }
 
-    credential_roundtrip(credential_store, profile)?;
-    lines.push("PASS credential store: available".to_owned());
-    lines.push("PASS credential roundtrip: save/load/delete".to_owned());
-
     let store = CorpusStore::open_initialized(corpus).map_err(|error| {
         io::Error::new(
             io::ErrorKind::InvalidData,
@@ -416,6 +412,10 @@ fn profile_preflight(
         }
     }
 
+    credential_roundtrip(credential_store, profile)?;
+    lines.push("PASS credential store: available".to_owned());
+    lines.push("PASS credential roundtrip: save/load/delete".to_owned());
+
     if environment_override_present {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
@@ -442,14 +442,14 @@ fn credential_roundtrip(
     )?;
     let probe = b"sociarium-nonsecret-preflight-probe";
 
-    store.save(&key, probe).map_err(|error| {
-        io::Error::other(format!("preflight credential roundtrip save failed: {error}"))
+    store.save(&key, probe).map_err(|_| {
+        io::Error::other("preflight credential roundtrip save failed")
     })?;
 
     let result = (|| -> Result<(), Box<dyn Error>> {
-        let loaded = store.load(&key).map_err(|error| {
-            io::Error::other(format!("preflight credential roundtrip load failed: {error}"))
-        })?;
+        let loaded = store
+            .load(&key)
+            .map_err(|_| io::Error::other("preflight credential roundtrip load failed"))?;
         if loaded.as_deref() != Some(probe.as_slice()) {
             return Err(io::Error::other(
                 "preflight credential roundtrip failed: loaded probe did not match saved probe",
@@ -459,9 +459,9 @@ fn credential_roundtrip(
         Ok(())
     })();
 
-    let cleanup = store.delete(&key).map_err(|error| {
-        io::Error::other(format!("preflight credential roundtrip cleanup failed: {error}"))
-    });
+    let cleanup = store
+        .delete(&key)
+        .map_err(|_| io::Error::other("preflight credential roundtrip cleanup failed"));
 
     match (result, cleanup) {
         (Err(error), _) => Err(error),
