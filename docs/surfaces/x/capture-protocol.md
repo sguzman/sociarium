@@ -62,7 +62,7 @@ Use separate captures for:
 
 - Likes — current observed UI location: **History → Likes** (`/i/history/likes`);
 - Bookmarks — current observed UI location is the base **History** view (`/i/history`); capture separately;
-- Followers;
+- Followers — current observed profile route `/<handle>/followers`; a small result set may terminate in the initial response;
 - Following;
 - Lists;
 - Mentions/Notifications.
