@@ -1,12 +1,12 @@
-# Sociarium implementation contract
+# Sociarium research and implementation contract
 
-This repository is an ongoing collaboration space. Preserve architectural intent, provenance, and documentation as first-class project state.
+This repository is an ongoing collaboration space. Preserve research provenance, architectural intent, and documentation as first-class project state. During the Surface Atlas phase, documentation outranks implementation velocity.
 
 ## Roles
 
 - **Human principal:** owns goals, constraints, credentials, and final product authority.
-- **ChatGPT:** project owner/director/architect/integrator; defines milestones, architecture, acceptance criteria, and reviews integration quality.
-- **Codex/implementation agents:** implement bounded tasks against the repository contract. Do not silently redefine project goals or architecture.
+- **ChatGPT:** project owner/director/research lead/architect/integrator; defines research programs, milestones, architecture, acceptance criteria, and reviews evidence and integration quality.
+- **Codex/implementation agents:** implement bounded tasks only after admission by the current project phase. Do not invent coding work during a research freeze or silently redefine project goals.
 
 ## Non-negotiable architecture
 
@@ -67,47 +67,55 @@ This repository is an ongoing collaboration space. Preserve architectural intent
 
 ## Current milestone
 
-The active phase is **R0 — Surface inventory**.
+The active milestone is **R0 — Surface inventory**.
 
-Sociarium is documentation-first during this phase.
+The human principal will enumerate the social sites they care about. Sociarium will then investigate those surfaces systematically before selecting any new implementation target.
 
-### Immediate goal
+### Research-first rules
 
-The human principal will enumerate the social surfaces they care about. Capture that list under `docs/surfaces/`, then investigate those surfaces according to:
+1. **No new surface-specific code during R0.**
+2. Do not resume the X archive importer merely because partial code already exists.
+3. Do not begin a second adapter because it seems technically attractive.
+4. Do not turn unknowns into assumptions. Record them as unknown.
+5. Current public facts about APIs, pricing, exports, access policy, or protocol behavior require fresh research and dated sources.
+6. For undocumented/private first-party protocols, distinguish direct observation from inference and date every claim.
+7. A dossier that concludes `do not implement` is successful project work.
+8. No surface is owed an adapter.
+9. Cost and recurring manual friction are architectural facts, not incidental product annoyances.
+10. For Tier C / Adversarial surfaces, protocol archaeology is a legitimate research path. Repeated manual export rituals are not normalized as the default solution.
+11. Adversarial research does not imply credential theft, access-control bypass, or acquisition of data the operator is not authorized to access.
+12. Sensitive raw captures do not belong in the public repository.
 
-- `docs/surface-research-doctrine.md`;
-- `docs/surface-access-tiers.md`;
-- `docs/surfaces/TEMPLATE.md`;
-- ADR 0007.
+### Implementation admission gate
 
-### Implementation freeze
+Before new surface-specific code is normally allowed, a current dossier should establish:
 
-Do **not** start new surface-specific implementation during R0.
+- overall access tier;
+- per-data-class access matrix;
+- documented APIs;
+- export/portability behavior;
+- first-party private protocol status;
+- authentication model;
+- cost model;
+- stable identity/object IDs;
+- pagination/history behavior;
+- incremental-sync potential;
+- protocol volatility;
+- relevant constraints/unknowns;
+- the exact acquisition source proposed for implementation and why.
 
-In particular, do not continue the X archive importer, add ZIP handling, build another live adapter, start MCP, or begin a private-protocol client merely because the code path is available.
+The human principal may deliberately override this gate. ChatGPT/Codex must never silently override it merely to keep coding.
 
-Allowed implementation work during the research phase is limited to preservation/maintenance/security/build fixes needed to keep existing project state healthy, unless the human principal explicitly overrides the freeze.
+### Existing code
 
-Existing pre-atlas implementation remains preserved:
+Existing Rust infrastructure remains supported project state and may receive preservation/security/build fixes when needed. It is **not** the active research agenda.
 
-- the official X API candidate on `m0-rc1`;
-- the current Rust substrate on `main`;
-- partial X archive-import work already present on `main`.
+The frozen `m0-rc1` branch preserves the official X API candidate. The in-progress X archive importer is historical/reusable work, not an instruction to continue implementation.
 
-None of these automatically determines the next implementation target.
+See:
 
-### Research progression
-
-```text
-R0  enumerate surfaces
-R1  build evidence-backed dossiers
-R2  classify tiers + per-data-class access
-R3  make explicit implementation-admission decisions
-M0  resume implementation against a researched target
-```
-
-A dossier may conclude **document only / do not implement**.
-
-Permanent rule:
-
-> **Research chooses implementation. Implementation does not choose the research agenda.**
+- `docs/surfaces/README.md`
+- `docs/surface-research-doctrine.md`
+- `docs/surface-access-tiers.md`
+- `docs/surfaces/TEMPLATE.md`
+- ADR 0007
