@@ -2,7 +2,7 @@
 
 Research date: 2026-09-18.
 
-Current evidence class: **public technical evidence**, not yet direct Sociarium observation.
+Current evidence class: **public technical evidence plus direct Sociarium first-party observation**.
 
 ## Why this matters
 
@@ -61,17 +61,17 @@ Public technical evidence describes authenticated web requests as using browser-
 
 Do **not** put live cookie values, auth tokens, CSRF values, or captured Authorization headers into this public repository.
 
-The exact current authentication/transaction-ID requirements are still pending direct observation.
+The transaction-ID and CSRF-related header names are now directly observed, but the complete authentication requirement remains unresolved because the sanitized HAR removed ordinary Cookie/Authorization material.
 
 ## What is directly unknown
 
-Sociarium has not yet directly established on 2026-09-18:
+After the first direct capture, Sociarium still has not directly established:
 
-- the current query ID for any operation;
 - which X JavaScript bundles contain operation metadata;
-- the current exact feature flags for self-data operations;
+- query-ID volatility across reloads/builds;
+- the complete feature/field-toggle behavior across self-data operation families;
 - whether all self-data reads require authenticated cookies;
-- pagination cursor field names/semantics per operation;
+- own-profile pagination request semantics and terminal cursor behavior;
 - history depth for `UserTweets`, `Likes`, or `Bookmarks`;
 - bookmark-folder behavior;
 - DM protocol families;
@@ -81,6 +81,30 @@ Sociarium has not yet directly established on 2026-09-18:
 - whether the current web client uses additional anti-automation proof beyond the reported transaction-ID layer.
 
 These remain research targets.
+
+## Direct Sociarium observation — 2026-09-18
+
+The first private browser capture has now been analyzed. See [observations/2026-09-18-profile-a.md](observations/2026-09-18-profile-a.md).
+
+Directly observed in Microsoft Edge 153:
+
+- the GraphQL path family `/i/api/graphql/{queryId}/{operationName}`;
+- own-profile operations `UserOriginalsTimeline` and `UserByScreenName`;
+- Post-detail operation `TweetDetail`;
+- incidental `HomeTimeline` operation with cursor-bearing follow-up requests;
+- `x-client-transaction-id`, `x-csrf-token`, `x-twitter-active-user`, `x-twitter-auth-type`, and `x-twitter-client-language` header names;
+- stable decimal `rest_id` values alongside distinct opaque GraphQL `id` values for users;
+- Post `rest_id` matching `legacy.id_str`;
+- quote embedding through `quoted_status_result.result`;
+- reply linkage through legacy `in_reply_to_*` fields;
+- long-form content through `note_tweet.note_tweet_results.result.text`;
+- timeline Top/Bottom cursor entries.
+
+The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
+
+The capture did **not** yet observe own-profile pagination, a repost wrapper, query-ID drift across reloads, or the Likes/Bookmarks/Followers/Following/Lists/Notifications operation families.
+
+Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
 ## Technical promise
 
