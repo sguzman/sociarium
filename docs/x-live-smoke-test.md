@@ -2,13 +2,13 @@
 
 This runbook is the final M0 validation gate. It exercises the real Windows credential, OAuth, X API, durable corpus, checkpoint, index, and local query path against an authorized X account.
 
-> **Current status:** do not execute the deliberate live smoke test while M0 pre-live issue #2 remains open. Issues #3–#7 are resolved; the final repository gate is the profile-aware local preflight.
+> **Current status:** repository-side M0 pre-live work is complete. This runbook is now the final M0 validation gate.
 
 Do not put tokens, authorization codes, PKCE verifiers, client secrets, raw failed OAuth/API response bodies, or Windows Credential Manager exports into issues, commits, screenshots, or test evidence.
 
 ## Preconditions
 
-- M0 pre-live issue #2 is closed with its acceptance criteria satisfied.
+- M0 pre-live issues #2–#7 are closed with their acceptance criteria satisfied.
 - Linux stable, native Windows, and Rust 1.85 locked CI are green on the exact `main` head being tested.
 - Windows is the test host.
 - The Sociarium **software source checkout** is on the current `main` branch.
@@ -85,17 +85,31 @@ enabled = true
 
 The Client ID is application identification, not a bearer token. Do not add a client secret or bearer credential to this file.
 
-Before contacting X, use the profile-aware local preflight delivered by issue #2. It should supersede the current coarse development checks by validating configuration, profile enablement, X OAuth settings, loopback bindability, an isolated native credential save/load/delete round trip, the dedicated corpus root, and emergency environment override state.
-
-Until #2 is implemented, the existing lower-level checks are:
+Before contacting X, run the no-network profile-aware preflight:
 
 ```text
-cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> config check
-cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> profiles list
-cargo run -p sociarium-cli --locked -- doctor
+cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS_ROOT> doctor --profile x-main
 ```
 
-These existing checks are not sufficient to authorize the final smoke run by themselves.
+It validates the configured/enabled profile, registered adapter, X OAuth application settings, loopback URI and real socket bindability, initialized dedicated corpus, reconstructable profile-binding state, an isolated non-secret native Credential Manager save/load/delete round trip, and whether the emergency `SOCIARIUM_X_ACCESS_TOKEN` override is present. It does **not** contact X.
+
+Expected first-enrollment shape:
+
+```text
+PASS config: <CORPUS_CONFIG>
+PASS profile: x-main (surface=x enabled=true)
+PASS adapter: x
+PASS x oauth config: client_id present, loopback redirect valid
+PASS callback bind: 127.0.0.1:49152
+PASS corpus: <CORPUS_ROOT> (initialized dedicated corpus)
+PASS profile binding: unbound; enrollment guard handle=@sguzman present
+PASS credential store: available
+PASS credential roundtrip: save/load/delete
+PASS emergency env override: absent
+READY local preflight passed; next boundary is live X authorization
+```
+
+For an already-enrolled corpus, the profile-binding line instead reports the stable non-secret remote ID. A conflicted binding, configuration mismatch, occupied callback port, credential-store failure, uninitialized corpus, or emergency X token override fails non-zero before X is contacted.
 
 ## 3. Start from a known authorization state
 
