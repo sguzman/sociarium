@@ -54,21 +54,12 @@ M0 is one vertical slice:
 
 `configured X profile -> native profile-scoped auth -> direct Rust X adapter -> raw evidence -> normalized posts -> durable local corpus -> rebuildable query index -> CLI query`
 
-The vertical slice is structurally implemented, but a 2026-09-17 pre-live audit found repository-side hardening that must be completed before the deliberate real-X smoke test. Issues #3–#7 are complete; M0 is **not repository-complete** while the final pre-live issue #2 remains open.
+The vertical slice and all repository-side pre-live hardening are implemented. Issues #2–#7 are complete and CI-verified.
 
-### Current implementation queue
+### Current M0 gate
 
-Implement bounded issues from the repository rather than asking the human principal to relay prompts between agents. Preferred order:
+Do **not** widen the implementation backlog before validating the completed vertical slice. The remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account, using the dedicated corpus boundary.
 
-1. **#2 — profile-aware local preflight.** Compose the now-stable config/callback/credential/corpus/profile-binding boundaries into a no-network readiness check safe to paste into issue evidence.
-
-After each bounded issue:
-
-- run formatting, strict clippy, workspace tests, native Windows CI, and Rust 1.85 `--locked` CI;
-- update the issue/docs required by that task;
-- close the issue only when its acceptance criteria are actually satisfied;
-- do not begin the live X smoke test while a pre-live issue remains unresolved.
-
-After the remaining pre-live issues are closed and CI is green, the remaining M0 gate is the documented live Windows smoke test with a registered X Developer App and authorized account, using the dedicated corpus boundary. Do not close M0 until stable remote identity is bound/verified, native login and credential persistence succeed, real sync and durable checkpointing succeed, the index rebuild/local query succeed, and a second incremental sync preserves the same bound remote profile.
+Before live authorization, run the profile-aware no-network preflight against the real corpus/config. It must report `READY`. Then follow `docs/x-live-smoke-test.md` through native OAuth, Windows Credential Manager persistence, first sync, stable profile binding, local query/index rebuild, and second incremental sync. Do not close M0 until stable remote identity is bound/verified, native login and credential persistence succeed, real sync and durable checkpointing succeed, the index rebuild/local query succeed, and a second incremental sync preserves the same bound remote profile.
 
 Do not widen M0 to publishing, arbitrary public-X search, a GUI, recommendation feeds, multiple adapters, deep thread acquisition, full repost/reblog ontology, or general rich-text/article parsing. The architecture must permit those later without implementing them now.
