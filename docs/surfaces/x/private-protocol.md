@@ -76,7 +76,7 @@ After the first direct capture, Sociarium still has not directly established:
 - bookmark-folder behavior;
 - DM protocol families;
 - live notification transport;
-- failure/rate-limit behavior;
+- rate-limit behavior and broader failure taxonomy beyond the directly observed partial-success Lists GraphQL field errors;
 - how often query IDs/features rotate in practice;
 - whether the current web client uses additional anti-automation proof beyond the reported transaction-ID layer.
 
@@ -102,7 +102,7 @@ Directly observed in Microsoft Edge 153:
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Lists/Notifications operation families remain unobserved. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`; Following additionally demonstrates multi-page Bottom-cursor pagination.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Notifications operation family remain unobserved. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
@@ -143,6 +143,18 @@ Four observed pages reused one dated query ID and returned 200 unique `TimelineU
 A notable wire behavior is that the request sent `count=20` while each response carried 50 primary users. Sociarium therefore does not treat the requested count as a hard page-size contract for this operation.
 
 See [observations/2026-09-18-following.md](observations/2026-09-18-following.md).
+
+### Lists management
+
+A 2026-09-18 direct capture established the viewer-scoped GraphQL operation `ListsManagementPageTimeline`.
+
+The request used `count=100` with no observed `userId`. The response root was `data.viewer.list_management_timeline.timeline.instructions`, with separate **Discover new Lists** and **Your Lists** modules carrying `TimelineTwitterList` items. List objects exposed stable decimal `id_str` values alongside state such as `following`, `is_member`, `muting`, and `pinning`.
+
+The bounded one-list result terminated both Top and Bottom while still carrying a Bottom cursor object, again confirming that terminal instructions outrank cursor presence.
+
+This response also provided the first direct partial-success GraphQL error case: HTTP 200 returned usable list data while top-level `errors[]` reported field-level decode failures for optional banner-media data. Sociarium must preserve successful `data` and record partial errors rather than treating any `errors[]` as total failure.
+
+See [observations/2026-09-18-lists.md](observations/2026-09-18-lists.md).
 
 ## Technical promise
 
