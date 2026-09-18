@@ -18,11 +18,28 @@ No new surface-specific implementation should begin during R0. The immediate tas
 
 The human principal will supply the initial list. Do not guess or pad this table merely to make it look complete.
 
-| Surface | Research status | Overall tier | Last reviewed | Dossier |
-| --- | --- | --- | --- | --- |
-| X | preliminary evidence exists; full dossier pending | provisional Tier C — Adversarial | 2026-09-17 | pending |
+| Surface | Operator priority | Research status | Overall tier | Last reviewed | Dossier |
+| --- | --- | --- | --- | --- | --- |
+| X / Twitter | **Highest** | preliminary evidence exists; full dossier pending | provisional Tier C — Adversarial | 2026-09-17 | pending |
+| Reddit | unranked | queued for baseline dossier | unknown | — | pending |
+| Bluesky | unranked | queued for baseline dossier | unknown | — | pending |
+| Facebook | unranked | queued for baseline dossier | unknown | — | pending |
+| YouTube | unranked | queued for baseline dossier | unknown | — | pending |
+| Quora | unranked | queued for baseline dossier | unknown | — | pending |
 
-X is provisional because current work established an important access constraint, but Sociarium has not yet completed the full forensic dossier required by the research doctrine.
+The initial inventory is intentionally open-ended. New surfaces may be added later without reopening the question of whether the first inventory was valid.
+
+**Operator priority is not an access tier.** Priority records how much the surface matters to the human principal; tier records how the surface treats self-data access. A high-priority surface may be adversarial, and a low-priority surface may be sovereign-friendly.
+
+X is currently the highest-priority research target. Its tier remains provisional because current work established an important access constraint, but Sociarium has not yet completed the full forensic dossier required by the research doctrine.
+
+## Adjacent site-specific projects
+
+Sociarium is not a generic reverse-engineering repository for every website the operator uses.
+
+ChatGPT is currently **out of scope for the Surface Atlas** because its site behavior already has a dedicated project, **Chatarium**, which is the canonical home for ChatGPT-specific site documentation, protocol observations, and client work.
+
+Cross-project references are appropriate when a Chatarium finding becomes relevant to Sociarium's general access doctrine, but the same site should not be independently maintained in both repositories.
 
 ## Research lifecycle
 
