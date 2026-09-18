@@ -246,13 +246,8 @@ impl CorpusStore {
         ));
         fs::create_dir(&staging_dir)?;
 
-        let result = self.write_staging_batch(
-            &staging_dir,
-            profile,
-            batch,
-            batch_meta,
-            acquisition_source,
-        );
+        let result =
+            self.write_staging_batch(&staging_dir, profile, batch, batch_meta, acquisition_source);
         let manifest = match result {
             Ok(manifest) => manifest,
             Err(error) => {
@@ -957,13 +952,7 @@ mod tests {
         let store = CorpusStore::open(&temp.0).unwrap();
         let profile = unbound_profile();
 
-        let live = batch_for(
-            "api/me.json",
-            "6679733",
-            "sguzman",
-            "live-acq",
-            14,
-        );
+        let live = batch_for("api/me.json", "6679733", "sguzman", "live-acq", 14);
         store.persist_sync_batch(&profile, &live).unwrap();
 
         let mut archive = batch_for(
@@ -977,10 +966,7 @@ mod tests {
         let persisted = store
             .persist_acquisition_batch(&profile, &archive, "x_account_archive")
             .unwrap();
-        assert_eq!(
-            persisted.manifest.acquisition_source,
-            "x_account_archive"
-        );
+        assert_eq!(persisted.manifest.acquisition_source, "x_account_archive");
 
         let state = store.profile_state(&profile).unwrap().unwrap();
         assert_eq!(state.last_acquisition_id, "live-acq");
