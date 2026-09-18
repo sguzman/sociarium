@@ -1138,6 +1138,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "sociarium-import-x-archive"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sociarium-acquisition",
+ "sociarium-core",
+ "thiserror",
+]
+
+[[package]]
 name = "sociarium-search"
 version = "0.1.0"
 dependencies = [
