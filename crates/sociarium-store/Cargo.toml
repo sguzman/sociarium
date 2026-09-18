@@ -11,6 +11,6 @@ chrono.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
-sociarium-adapter = { path = "../sociarium-adapter" }
+sociarium-acquisition = { path = "../sociarium-acquisition" }
 sociarium-core = { path = "../sociarium-core" }
 thiserror.workspace = true
