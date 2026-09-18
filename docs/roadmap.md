@@ -17,23 +17,25 @@ configured X profile
   -> query from CLI
 ```
 
-Repository implementation status: **structurally complete but still under pre-live hardening**. A current-contract audit performed before the first live X run found repository-side work that must be resolved before the end-to-end smoke test.
+Repository implementation status: **repository-side M0 complete; live validation pending**.
 
-Open M0 pre-live work is tracked in issues #2–#6:
+The pre-live audit produced issues #2–#7, and all are now resolved and CI-verified:
 
-- correct the X user-timeline wire request and relationship/repost semantics (#5);
-- make X/OAuth failure diagnostics non-secret by construction (#4);
-- make OAuth loopback handling bounded and resilient (#3);
-- initialize a separate Git-safe operator corpus rather than conflating it with the public software checkout (#6);
-- compose the settled local boundaries into a profile-aware no-network preflight (#2).
+- profile-aware no-network preflight (#2);
+- bounded/resilient OAuth loopback callback (#3);
+- non-secret-by-construction X/OAuth remote diagnostics (#4);
+- current X timeline wire/full-text/relationship fidelity (#5);
+- explicit separate Git-safe operator corpus initialization (#6);
+- durable stable remote-profile identity binding (#7).
 
-Preferred implementation order is **#5 -> #4 -> #3 -> #6 -> #2**.
-
-After those are integrated and CI is green, the final M0 gate is one live end-to-end smoke test with a registered X Developer App and authorized account, exercising native login, persisted credentials, acquisition into the dedicated corpus, durable sync state, index rebuild, and local query against real remote data.
+The final M0 gate is one live end-to-end smoke test on Windows with a registered X Developer App and authorized account. It must exercise the real profile-aware preflight, native OAuth login, Windows Credential Manager persistence, acquisition into the dedicated corpus, stable remote identity binding, durable incremental sync state, index rebuild/local query, and a second incremental sync against real X data.
 
 Current M0 implementation includes:
 
 - generic profile and per-surface non-secret configuration;
+- explicit `sociarium corpus init` boundary for operator-owned Git-safe corpora;
+- profile-aware local no-network preflight with native credential round-trip;
+- durable stable remote-profile binding reconstructed from corpus evidence;
 - native OAuth2 Authorization Code + S256 PKCE for X;
 - profile-scoped Windows Credential Manager persistence;
 - refresh-token rollover and automatic refresh before sync;
