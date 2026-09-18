@@ -1065,6 +1065,7 @@ fn print_hit(hit: &PostHit) {
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
+    use std::fs::OpenOptions;
     use std::net::{SocketAddr, TcpStream};
     use std::thread;
 
@@ -1074,6 +1075,7 @@ mod tests {
         NormalizedRecord, ObservationMeta, ProfileId, ProfileOwnership, ProfileSnapshot, RemoteId,
         SurfaceId,
     };
+    use sociarium_credentials::{CredentialError, MemoryCredentialStore};
 
     use super::*;
 
@@ -1183,6 +1185,359 @@ mod tests {
         assert!(error.contains("999999"));
 
         fs::remove_dir_all(path).unwrap();
+    }
+
+    fn free_loopback_port() -> u16 {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        listener.local_addr().unwrap().port()
+    }
+
+    fn preflight_root(name: &str) -> PathBuf {
+        let path = std::env::temp_dir().join(format!(
+            "sociarium-cli-preflight-{name}-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&path);
+        CorpusStore::initialize(&path).unwrap();
+        path
+    }
+
+    fn write_preflight_config(
+        root: &Path,
+        port: u16,
+        enabled: bool,
+        handle: Option<&str>,
+        remote_id: Option<&str>,
+    ) -> PathBuf {
+        let handle = handle
+            .map(|value| format!("handle = \"{value}\"\n"))
+            .unwrap_or_default();
+        let remote_id = remote_id
+            .map(|value| format!("remote_id = \"{value}\"\n"))
+            .unwrap_or_default();
+        let text = format!(
+            "schema_version = 1\n\n[surfaces.x]\nclient_id = \"test-client\"\nredirect_uri = \"http://127.0.0.1:{port}/oauth/x/callback\"\n\n[[profiles]]\nid = \"x-main\"\nsurface = \"x\"\n{handle}{remote_id}ownership = \"self_owned\"\nenabled = {enabled}\n"
+        );
+        let path = root.join(CORPUS_CONFIG_FILE);
+        fs::write(&path, text).unwrap();
+        path
+    }
+
+    fn preflight_lines(
+        config: &Path,
+        corpus: &Path,
+        store: &dyn CredentialStore,
+    ) -> Result<Vec<String>, Box<dyn Error>> {
+        profile_preflight(config, corpus, "x-main", store, false)
+    }
+
+    struct HostileCredentialStore;
+
+    impl CredentialStore for HostileCredentialStore {
+        fn load(&self, _key: &CredentialKey) -> Result<Option<Vec<u8>>, CredentialError> {
+            Err(CredentialError::Backend(
+                "access-secret refresh-secret private-profile".to_owned(),
+            ))
+        }
+
+        fn save(&self, _key: &CredentialKey, _secret: &[u8]) -> Result<(), CredentialError> {
+            Err(CredentialError::Backend(
+                "access-secret refresh-secret private-profile".to_owned(),
+            ))
+        }
+
+        fn delete(&self, _key: &CredentialKey) -> Result<bool, CredentialError> {
+            Err(CredentialError::Backend(
+                "access-secret refresh-secret private-profile".to_owned(),
+            ))
+        }
+    }
+
+    #[test]
+    fn profile_preflight_succeeds_offline_for_safe_first_enrollment() {
+        let root = preflight_root("success");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("sguzman"),
+            None,
+        );
+        let credentials = MemoryCredentialStore::default();
+
+        let lines = preflight_lines(&config, &root, &credentials).unwrap();
+        let output = lines.join("\n");
+
+        assert!(output.contains("PASS profile: x-main"));
+        assert!(output.contains("PASS x oauth config"));
+        assert!(output.contains("PASS callback bind"));
+        assert!(output.contains("PASS credential roundtrip"));
+        assert!(output.contains("PASS corpus"));
+        assert!(output.contains("unbound; enrollment guard handle=@sguzman present"));
+        assert!(output.contains("PASS emergency env override: absent"));
+        assert!(output.contains("READY local preflight passed"));
+        assert!(!output.contains("sociarium-nonsecret-preflight-probe"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_missing_or_disabled_profile() {
+        let root = preflight_root("profile-errors");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            false,
+            Some("sguzman"),
+            None,
+        );
+        let credentials = MemoryCredentialStore::default();
+
+        let missing = profile_preflight(&config, &root, "missing", &credentials, false)
+            .unwrap_err()
+            .to_string();
+        assert!(missing.contains("preflight profile failed"));
+
+        let disabled = preflight_lines(&config, &root, &credentials)
+            .unwrap_err()
+            .to_string();
+        assert!(disabled.contains("disabled"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_missing_x_oauth_setting() {
+        let root = preflight_root("missing-oauth");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("sguzman"),
+            None,
+        );
+        let text = fs::read_to_string(&config)
+            .unwrap()
+            .replace("client_id = \"test-client\"\n", "");
+        fs::write(&config, text).unwrap();
+
+        let error = preflight_lines(&config, &root, &MemoryCredentialStore::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("preflight X OAuth config failed"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_non_loopback_redirect() {
+        let root = preflight_root("invalid-redirect");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("sguzman"),
+            None,
+        );
+        let text = fs::read_to_string(&config)
+            .unwrap()
+            .replace("http://127.0.0.1:", "https://example.com:");
+        fs::write(&config, text).unwrap();
+
+        let error = preflight_lines(&config, &root, &MemoryCredentialStore::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("preflight callback bind failed"));
+        assert!(error.contains("loopback"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_occupied_callback_port() {
+        let root = preflight_root("occupied-port");
+        let occupied = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = occupied.local_addr().unwrap().port();
+        let config = write_preflight_config(&root, port, true, Some("sguzman"), None);
+
+        let error = preflight_lines(&config, &root, &MemoryCredentialStore::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("preflight callback bind failed"));
+
+        drop(occupied);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_reports_bound_remote_id() {
+        let root = preflight_root("bound");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("old-handle"),
+            None,
+        );
+        let store = CorpusStore::open_initialized(&root).unwrap();
+        let profile = binding_test_profile(None);
+        persist_test_binding(&store, &profile, "6679733");
+
+        let lines = preflight_lines(&config, &root, &MemoryCredentialStore::default()).unwrap();
+        assert!(
+            lines
+                .iter()
+                .any(|line| line == "PASS profile binding: bound remote_id=6679733")
+        );
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_configured_remote_id_conflict() {
+        let root = preflight_root("configured-conflict");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("old-handle"),
+            Some("999999"),
+        );
+        let store = CorpusStore::open_initialized(&root).unwrap();
+        let profile = binding_test_profile(None);
+        persist_test_binding(&store, &profile, "6679733");
+
+        let error = preflight_lines(&config, &root, &MemoryCredentialStore::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("configured remote_id 999999"));
+        assert!(error.contains("durable remote_id 6679733"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_conflicted_durable_identity() {
+        let root = preflight_root("durable-conflict");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("old-handle"),
+            None,
+        );
+        let store = CorpusStore::open_initialized(&root).unwrap();
+        let profile = binding_test_profile(None);
+        persist_test_binding(&store, &profile, "6679733");
+
+        let records = root
+            .join("acquisitions")
+            .join("x")
+            .join("x-main")
+            .join("binding-acquisition")
+            .join("normalized")
+            .join("records.jsonl");
+        let observation = ObservationMeta {
+            surface: SurfaceId::new("x").unwrap(),
+            observed_at: Utc.with_ymd_and_hms(2026, 9, 17, 20, 0, 0).unwrap(),
+            acquisition_id: "binding-acquisition".to_owned(),
+            schema_version: 1,
+        };
+        let conflicting = NormalizedRecord::ProfileSnapshot(ProfileSnapshot {
+            profile_id: ProfileId::new("x-main").unwrap(),
+            remote_id: RemoteId::new("999999").unwrap(),
+            handle: Some("other".to_owned()),
+            display_name: None,
+            bio: None,
+            avatar_url: None,
+            metrics: BTreeMap::new(),
+            observation,
+            extensions: BTreeMap::new(),
+        });
+        let mut file = OpenOptions::new().append(true).open(records).unwrap();
+        serde_json::to_writer(&mut file, &conflicting).unwrap();
+        file.write_all(b"\n").unwrap();
+
+        let error = preflight_lines(&config, &root, &MemoryCredentialStore::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("conflicted durable remote ids"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_uninitialized_corpus() {
+        let config_root = preflight_root("config-only");
+        let config = write_preflight_config(
+            &config_root,
+            free_loopback_port(),
+            true,
+            Some("sguzman"),
+            None,
+        );
+        let bad_corpus = std::env::temp_dir().join(format!(
+            "sociarium-cli-uninitialized-corpus-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&bad_corpus);
+        fs::create_dir_all(&bad_corpus).unwrap();
+
+        let error = preflight_lines(&config, &bad_corpus, &MemoryCredentialStore::default())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("preflight corpus failed"));
+
+        fs::remove_dir_all(config_root).unwrap();
+        fs::remove_dir_all(bad_corpus).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_does_not_echo_hostile_credential_backend_text() {
+        let root = preflight_root("credential-redaction");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("sguzman"),
+            None,
+        );
+
+        let error = preflight_lines(&config, &root, &HostileCredentialStore)
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("preflight credential roundtrip save failed"));
+        assert!(!error.contains("access-secret"));
+        assert!(!error.contains("refresh-secret"));
+        assert!(!error.contains("private-profile"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn profile_preflight_rejects_emergency_x_token_override() {
+        let root = preflight_root("env-override");
+        let config = write_preflight_config(
+            &root,
+            free_loopback_port(),
+            true,
+            Some("sguzman"),
+            None,
+        );
+
+        let error = profile_preflight(
+            &config,
+            &root,
+            "x-main",
+            &MemoryCredentialStore::default(),
+            true,
+        )
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains(X_ACCESS_TOKEN_ENV));
+        assert!(!error.contains("token value"));
+
+        fs::remove_dir_all(root).unwrap();
     }
 
     fn test_session() -> XOAuthSession {
