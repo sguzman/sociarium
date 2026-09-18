@@ -1,5 +1,7 @@
 # Adapter model
 
+> **Research-first gate:** an adapter is an implementation consequence, not the starting point for understanding a surface. Before new surface-specific adapter work normally begins, the Surface Atlas should have a current dossier, access tier, per-data-class matrix, and explicit implementation-admission decision. See `surface-research-doctrine.md` and ADR 0007.
+
 Adapters isolate remote-surface behavior from the Sociarium ontology.
 
 ## Responsibilities
