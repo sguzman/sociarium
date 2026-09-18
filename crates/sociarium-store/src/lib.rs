@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use sociarium_adapter::SyncBatch;
+use sociarium_acquisition::AcquisitionBatch;
 use sociarium_core::{NormalizedRecord, ProfileId, RemoteId, SurfaceId, TrackedProfile};
 use thiserror::Error;
 
@@ -208,10 +208,10 @@ impl CorpusStore {
         })
     }
 
-    pub fn persist_sync_batch(
+    pub fn persist_acquisition_batch(
         &self,
         profile: &TrackedProfile,
-        batch: &SyncBatch,
+        batch: &AcquisitionBatch,
     ) -> Result<PersistedBatch, StoreError> {
         let batch_meta = validate_batch(profile, batch)?;
         self.validate_profile_binding(profile, batch)?;
@@ -255,6 +255,15 @@ impl CorpusStore {
             state_path,
             manifest,
         })
+    }
+
+    /// Compatibility wrapper for the live synchronization path.
+    pub fn persist_sync_batch(
+        &self,
+        profile: &TrackedProfile,
+        batch: &AcquisitionBatch,
+    ) -> Result<PersistedBatch, StoreError> {
+        self.persist_acquisition_batch(profile, batch)
     }
 
     pub fn profile_state(
@@ -302,7 +311,7 @@ impl CorpusStore {
     fn validate_profile_binding(
         &self,
         profile: &TrackedProfile,
-        batch: &SyncBatch,
+        batch: &AcquisitionBatch,
     ) -> Result<(), StoreError> {
         let durable = match self.profile_binding(profile)? {
             ProfileBinding::Unbound => None,
@@ -365,7 +374,7 @@ impl CorpusStore {
         &self,
         staging_dir: &Path,
         profile: &TrackedProfile,
-        batch: &SyncBatch,
+        batch: &AcquisitionBatch,
         batch_meta: BatchMeta,
     ) -> Result<AcquisitionManifest, StoreError> {
         let raw_dir = staging_dir.join("raw");
@@ -545,7 +554,7 @@ fn ensure_corpus_gitignore(root: &Path) -> Result<(), StoreError> {
     Ok(())
 }
 
-fn validate_batch(profile: &TrackedProfile, batch: &SyncBatch) -> Result<BatchMeta, StoreError> {
+fn validate_batch(profile: &TrackedProfile, batch: &AcquisitionBatch) -> Result<BatchMeta, StoreError> {
     let first = batch.records.first().ok_or(StoreError::EmptyBatch)?;
     let first_observation = first.observation();
     if first_observation.acquisition_id.trim().is_empty() {
@@ -661,15 +670,15 @@ pub enum StoreError {
         found: u32,
         expected: u32,
     },
-    #[error("sync batch contains no normalized records")]
+    #[error("acquisition batch contains no normalized records")]
     EmptyBatch,
-    #[error("sync batch acquisition id cannot be blank")]
+    #[error("acquisition batch acquisition id cannot be blank")]
     InvalidAcquisitionId,
-    #[error("sync batch mixes records from different acquisitions")]
+    #[error("acquisition batch mixes records from different acquisitions")]
     MixedAcquisition,
-    #[error("sync batch profile mismatch: expected {expected}, got {actual}")]
+    #[error("acquisition batch profile mismatch: expected {expected}, got {actual}")]
     ProfileMismatch { expected: String, actual: String },
-    #[error("sync batch surface mismatch: expected {expected}, got {actual}")]
+    #[error("acquisition batch surface mismatch: expected {expected}, got {actual}")]
     SurfaceMismatch { expected: String, actual: String },
     #[error("unsafe raw evidence path: {}", .0.display())]
     UnsafeRawPath(PathBuf),
@@ -715,7 +724,7 @@ mod tests {
     use std::fs::OpenOptions;
 
     use chrono::{TimeZone, Utc};
-    use sociarium_adapter::RawEvidence;
+    use sociarium_acquisition::RawEvidence;
     use sociarium_core::{
         NormalizedRecord, ObservationMeta, ProfileOwnership, ProfileSnapshot, RemoteId,
     };
@@ -765,7 +774,7 @@ mod tests {
         handle: &str,
         acquisition_id: &str,
         hour: u32,
-    ) -> SyncBatch {
+    ) -> AcquisitionBatch {
         let observation = ObservationMeta {
             surface: SurfaceId::new("x").unwrap(),
             observed_at: Utc.with_ymd_and_hms(2026, 9, 17, hour, 0, 0).unwrap(),
@@ -784,7 +793,7 @@ mod tests {
             extensions: BTreeMap::new(),
         });
 
-        SyncBatch {
+        AcquisitionBatch {
             records: vec![record],
             raw: vec![RawEvidence {
                 media_type: "application/json".to_owned(),
@@ -795,7 +804,7 @@ mod tests {
         }
     }
 
-    fn batch(raw_path: &str) -> SyncBatch {
+    fn batch(raw_path: &str) -> AcquisitionBatch {
         batch_for(raw_path, "6679733", "sguzman", "acq-001", 14)
     }
 
