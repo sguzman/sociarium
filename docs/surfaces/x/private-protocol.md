@@ -75,7 +75,7 @@ After the first direct capture, Sociarium still has not directly established:
 - mature-account profile history depth and bounded terminal depth for `Likes` or `Bookmarks`;
 - bookmark-folder behavior;
 - DM protocol families;
-- live notification transport;
+- live/push notification transport and the Mentions subview;
 - rate-limit behavior and broader failure taxonomy beyond the directly observed partial-success Lists GraphQL field errors;
 - how often query IDs/features rotate in practice;
 - whether the current web client uses additional anti-automation proof beyond the reported transaction-ID layer.
@@ -102,7 +102,7 @@ Directly observed in Microsoft Edge 153:
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Notifications operation family remain unobserved. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Mentions subview remain unobserved. The main Notifications stream is now directly observed as viewer-scoped `NotificationsTimeline` with `timeline_type=All`, heterogeneous timeline items, unread-state instructions, and cursor exhaustion by disappearance of the Bottom cursor. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
@@ -155,6 +155,20 @@ The bounded one-list result terminated both Top and Bottom while still carrying 
 This response also provided the first direct partial-success GraphQL error case: HTTP 200 returned usable list data while top-level `errors[]` reported field-level decode failures for optional banner-media data. Sociarium must preserve successful `data` and record partial errors rather than treating any `errors[]` as total failure.
 
 See [observations/2026-09-18-lists.md](observations/2026-09-18-lists.md).
+
+### Notifications — All
+
+A 2026-09-18 direct capture established viewer-scoped GraphQL `NotificationsTimeline` for the main `/notifications` page with `timeline_type=All`.
+
+Three requests were observed. The first response carried 20 content items, the second 2, and the third 0. The first two pages advanced by passing the previous Bottom cursor through `variables.cursor`. The final empty page retained only a Top cursor and omitted the Bottom cursor, with no explicit `TimelineTerminateTimeline(direction=Bottom)`.
+
+This gives Sociarium a second directly observed terminal pattern: exhaustion can be represented by disappearance of the next-direction cursor rather than a terminal instruction.
+
+The stream is heterogeneous: `TimelineNotification` aggregate/action items coexist with ordinary `TimelineTweet` Post items. Responses also carried `TimelineClearEntriesUnreadState` and `TimelineMarkEntriesUnreadGreaterThanSortIndex` instructions. No separate read-state mutation was observed in the bounded page load.
+
+The Mentions subview remains separately unobserved.
+
+See [observations/2026-09-18-notifications-all.md](observations/2026-09-18-notifications-all.md).
 
 ## Technical promise
 
