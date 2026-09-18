@@ -46,7 +46,8 @@ Never commit:
 
 ## Recorded observations
 
-- [2026-09-18 profile/timeline capture A](2026-09-18-profile-a.md) — first direct Edge/X observation; confirms current profile/detail operations, identity fields, reply/quote and `note_tweet` structures; own-profile pagination remains incomplete.
+- [2026-09-18 profile/timeline capture A](2026-09-18-profile-a.md) — first direct Edge/X observation; confirms current profile/detail operations, identity fields, reply/quote and `note_tweet` structures.
+- [2026-09-18 profile pagination to terminal history](2026-09-18-profile-pagination.md) — confirms Bottom-cursor pagination, 93 unique Posts in this young account, explicit `TimelineTerminateTimeline(direction=Bottom)`, and short-interval query-ID stability.
 
 ## Naming
 
