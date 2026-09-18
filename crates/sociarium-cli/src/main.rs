@@ -649,25 +649,24 @@ fn import_x_archive(
         .acquisition_id
         .clone();
 
-    let persisted = match store.persist_acquisition_batch(
-        &profile,
-        &imported.batch,
-        "x_account_archive",
-    ) {
-        Ok(persisted) => {
-            println!(
-                "imported X archive acquisition {} -> {}",
-                acquisition_id,
-                persisted.acquisition_dir.display()
-            );
-            true
-        }
-        Err(StoreError::AcquisitionExists(existing)) if existing == acquisition_id => {
-            println!("X archive acquisition {existing} is already durable; no duplicate written");
-            false
-        }
-        Err(error) => return Err(error.into()),
-    };
+    let persisted =
+        match store.persist_acquisition_batch(&profile, &imported.batch, "x_account_archive") {
+            Ok(persisted) => {
+                println!(
+                    "imported X archive acquisition {} -> {}",
+                    acquisition_id,
+                    persisted.acquisition_dir.display()
+                );
+                true
+            }
+            Err(StoreError::AcquisitionExists(existing)) if existing == acquisition_id => {
+                println!(
+                    "X archive acquisition {existing} is already durable; no duplicate written"
+                );
+                false
+            }
+            Err(error) => return Err(error.into()),
+        };
 
     println!(
         "X archive account: @{} remote_id={}",
