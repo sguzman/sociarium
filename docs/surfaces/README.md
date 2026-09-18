@@ -20,7 +20,7 @@ The human principal will supply the initial list. Do not guess or pad this table
 
 | Surface | Operator priority | Research status | Overall tier | Last reviewed | Dossier |
 | --- | --- | --- | --- | --- | --- |
-| X / Twitter | **Highest** | preliminary evidence exists; full dossier pending | provisional Tier C — Adversarial | 2026-09-17 | pending |
+| X / Twitter | **Highest** | baseline desk-research dossier complete; direct first-party observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](x/README.md) |
 | Reddit | unranked | queued for baseline dossier | unknown | — | pending |
 | Bluesky | unranked | queued for baseline dossier | unknown | — | pending |
 | Facebook | unranked | queued for baseline dossier | unknown | — | pending |
@@ -31,7 +31,7 @@ The initial inventory is intentionally open-ended. New surfaces may be added lat
 
 **Operator priority is not an access tier.** Priority records how much the surface matters to the human principal; tier records how the surface treats self-data access. A high-priority surface may be adversarial, and a low-priority surface may be sovereign-friendly.
 
-X is currently the highest-priority research target. Its tier remains provisional because current work established an important access constraint, but Sociarium has not yet completed the full forensic dossier required by the research doctrine.
+X is currently the highest-priority research target. Its baseline dossier now establishes the documented API/export terrain, public technical evidence for the private web protocol, and current platform-policy constraints. Its Tier C classification remains provisional until direct first-party observation strengthens the undocumented-protocol evidence.
 
 ## Adjacent site-specific projects
 
