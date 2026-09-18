@@ -64,7 +64,7 @@ Use separate captures for:
 - Bookmarks — current observed UI location is the base **History** view (`/i/history`); capture separately;
 - Followers — current observed profile route `/<handle>/followers`; a small result set may terminate in the initial response;
 - Following — current observed profile route `/<handle>/following`; request `count` is not a guaranteed returned page size;
-- Lists;
+- Lists — current observed profile route `/<handle>/lists`; the management surface may terminate in one response even when it includes recommendation and own-list modules;
 - Mentions/Notifications.
 
 For each:
