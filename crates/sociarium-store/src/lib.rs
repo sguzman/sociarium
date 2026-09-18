@@ -952,6 +952,42 @@ mod tests {
     }
 
     #[test]
+    fn offline_acquisition_does_not_replace_live_sync_state() {
+        let temp = TempCorpus::new("offline-does-not-replace-sync");
+        let store = CorpusStore::open(&temp.0).unwrap();
+        let profile = unbound_profile();
+
+        let live = batch_for(
+            "api/me.json",
+            "6679733",
+            "sguzman",
+            "live-acq",
+            14,
+        );
+        store.persist_sync_batch(&profile, &live).unwrap();
+
+        let mut archive = batch_for(
+            "x-archive/account.js",
+            "6679733",
+            "sguzman",
+            "archive-acq",
+            15,
+        );
+        archive.next_cursor = None;
+        let persisted = store
+            .persist_acquisition_batch(&profile, &archive, "x_account_archive")
+            .unwrap();
+        assert_eq!(
+            persisted.manifest.acquisition_source,
+            "x_account_archive"
+        );
+
+        let state = store.profile_state(&profile).unwrap().unwrap();
+        assert_eq!(state.last_acquisition_id, "live-acq");
+        assert_eq!(state.cursor.as_deref(), Some("NEXT-PAGE"));
+    }
+
+    #[test]
     fn reconstructs_binding_and_accepts_handle_change_for_same_remote_id() {
         let temp = TempCorpus::new("binding");
         let store = CorpusStore::open(&temp.0).unwrap();
