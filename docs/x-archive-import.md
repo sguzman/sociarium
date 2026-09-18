@@ -88,4 +88,4 @@ cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts list --profi
 cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts search <TERM> --profile x-main
 ```
 
-M0 closes when a real operator archive imports successfully on Windows and those local queries return real authored Posts without any paid X API usage.
+If Surface Atlas research later admits archive import as an implementation target, validate the real operator archive on Windows and record the result in the resulting implementation issue. This runbook is not a current project completion gate.
