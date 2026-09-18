@@ -99,8 +99,8 @@ pub fn import_directory(
         .ok_or_else(|| XArchiveError::Account("account.js contained no account record".to_owned()))?
         .account;
 
-    let account_remote_id =
-        RemoteId::new(account.account_id.clone()).map_err(|error| XArchiveError::Account(error.to_string()))?;
+    let account_remote_id = RemoteId::new(account.account_id.clone())
+        .map_err(|error| XArchiveError::Account(error.to_string()))?;
     validate_enrollment(profile, &account_remote_id, &account.username)?;
 
     let mut source_files = vec![(account_path.clone(), account_bytes)];
@@ -135,7 +135,10 @@ pub fn import_directory(
     let mut post_count = 0;
     let mut skipped_retweets = 0;
 
-    for (path, bytes) in source_files.iter().filter(|(path, _)| path != &account_path) {
+    for (path, bytes) in source_files
+        .iter()
+        .filter(|(path, _)| path != &account_path)
+    {
         let items: Vec<TweetEnvelope> = parse_wrapped_array(path, bytes)?;
         for item in items {
             let tweet = item.tweet;
@@ -287,8 +290,8 @@ fn normalize_tweet(
         .or(tweet.id)
         .filter(|value| !value.trim().is_empty())
         .ok_or_else(|| XArchiveError::Tweet("tweet has no stable id".to_owned()))?;
-    let remote_id =
-        RemoteId::new(remote_id_value.clone()).map_err(|error| XArchiveError::Tweet(error.to_string()))?;
+    let remote_id = RemoteId::new(remote_id_value.clone())
+        .map_err(|error| XArchiveError::Tweet(error.to_string()))?;
     let text = tweet
         .full_text
         .or(tweet.text)
@@ -305,7 +308,11 @@ fn normalize_tweet(
         remote_id,
         created_at,
         text,
-        reply_to: relationship_id(tweet.in_reply_to_status_id_str.or(tweet.in_reply_to_status_id))?,
+        reply_to: relationship_id(
+            tweet
+                .in_reply_to_status_id_str
+                .or(tweet.in_reply_to_status_id),
+        )?,
         quote_of: relationship_id(tweet.quoted_status_id_str.or(tweet.quoted_status_id))?,
         canonical_url: Some(format!("https://x.com/{username}/status/{remote_id_value}")),
         observation,
