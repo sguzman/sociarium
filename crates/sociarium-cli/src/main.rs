@@ -1408,25 +1408,9 @@ mod tests {
             .join("binding-acquisition")
             .join("normalized")
             .join("records.jsonl");
-        let observation = ObservationMeta {
-            surface: SurfaceId::new("x").unwrap(),
-            observed_at: Utc.with_ymd_and_hms(2026, 9, 17, 20, 0, 0).unwrap(),
-            acquisition_id: "binding-acquisition".to_owned(),
-            schema_version: 1,
-        };
-        let conflicting = NormalizedRecord::ProfileSnapshot(ProfileSnapshot {
-            profile_id: ProfileId::new("x-main").unwrap(),
-            remote_id: RemoteId::new("999999").unwrap(),
-            handle: Some("other".to_owned()),
-            display_name: None,
-            bio: None,
-            avatar_url: None,
-            metrics: BTreeMap::new(),
-            observation,
-            extensions: BTreeMap::new(),
-        });
+        let conflicting = br#"{"kind":"profile_snapshot","record":{"profile_id":"x-main","remote_id":"999999","handle":"other","display_name":null,"bio":null,"avatar_url":null,"metrics":{},"observation":{"surface":"x","observed_at":"2026-09-17T20:00:00Z","acquisition_id":"binding-acquisition","schema_version":1},"extensions":{}}}"#;
         let mut file = OpenOptions::new().append(true).open(records).unwrap();
-        serde_json::to_writer(&mut file, &conflicting).unwrap();
+        file.write_all(conflicting).unwrap();
         file.write_all(b"\n").unwrap();
 
         let error = preflight_lines(&config, &root, &MemoryCredentialStore::default())
