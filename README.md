@@ -12,6 +12,10 @@ Implementation is intentionally frozen as the active priority.
 
 The immediate project task is to enumerate the social surfaces the human principal actually cares about, then investigate each one before choosing more implementation targets.
 
+Active execution log: [R0 — enumerate Surface Atlas inventory](https://github.com/sguzman/sociarium/issues/10).
+
+**Stop condition:** until that inventory exists and dossier research begins, unfinished adapter/importer code is not a reason to resume implementation.
+
 For every surface, Sociarium asks:
 
 > What mechanisms exist for a user to acquire, preserve, query, and continuously observe their own data, and how much control does the surface retain over each mechanism?
