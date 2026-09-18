@@ -20,9 +20,9 @@ The first vertical slice is structurally implemented:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #3–#6 are now resolved, including X wire/data fidelity, safe remote errors, bounded OAuth callback handling, and explicit Git-safe corpus initialization. Remaining issues #7 and #2 cover stable remote-profile binding and the final profile-aware local preflight.
+A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #3–#7 are now resolved, including X wire/data fidelity, safe remote errors, bounded OAuth callback handling, explicit Git-safe corpus initialization, and durable stable remote-profile binding. The final repository-side M0 task is #2, the profile-aware local preflight.
 
-Preferred implementation order is now **#7 -> #2**.
+**Issue #2 is now the sole pre-live implementation gate.**
 
 **Do not treat the live X smoke test as the next step until the remaining pre-live issues are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
 
