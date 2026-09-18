@@ -24,7 +24,7 @@ The human principal will supply the initial list. Do not guess or pad this table
 | Reddit | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial (Data API has Tier B-like paths) | 2026-09-18 | [dossier](reddit/README.md) |
 | Bluesky | unranked | baseline desk-research dossier complete; direct observation pending | **Tier A — Sovereign-friendly** | 2026-09-18 | [dossier](bluesky/README.md) |
 | Facebook | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](facebook/README.md) |
-| YouTube | unranked | queued for baseline dossier | unknown | — | pending |
+| YouTube | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier B — Workable (Tier C pockets) | 2026-09-18 | [dossier](youtube/README.md) |
 | Quora | unranked | queued for baseline dossier | unknown | — | pending |
 
 The initial inventory is intentionally open-ended. New surfaces may be added later without reopening the question of whether the first inventory was valid.
