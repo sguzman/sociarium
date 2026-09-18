@@ -55,9 +55,9 @@ For X, the user-post timeline currently exposes only a bounded recent history (a
 
 Later archive-import or full-archive acquisition paths may fill older history when the operator has an export or current X access permits it. Those are additive acquisition sources; they do not change the authority model.
 
-## X adapter policy
+## Existing X adapter policy
 
-X is the first adapter only.
+X is the first implemented adapter, not the active project milestone and not automatically the next implementation target.
 
 The X adapter talks directly to the X API from Rust and currently owns:
 
@@ -73,16 +73,16 @@ The X adapter talks directly to the X API from Rust and currently owns:
 
 The X Developer App remains remote registration state required by X; it is not a local runtime component to replace.
 
-### M0 Post fidelity boundary
+### Existing X Post fidelity boundary
 
 The generic `Post` model already supports portable `reply_to` and `quote_of` references. The X payload model understands `referenced_tweets` / relationship kinds and can normalize `replied_to` and `quoted` references.
 
-The live X request must explicitly request the remote `referenced_tweets` field for those relationships to exist in production data. Repost/retweet relationships are not yet represented generically in M0 and must not be silently flattened.
+The live X request must explicitly request the remote `referenced_tweets` field for those relationships to exist in production data. Repost/retweet relationships are not yet represented generically in the existing implementation and must not be silently flattened.
 
-M0 must also preserve the best complete authored text the X payload exposes. X uses the selectable `note_tweet` field for long-form Note Tweet data, and current X documentation states that Posts longer than 280 characters keep their full text there rather than in the ordinary `text` field. When `note_tweet.text` is present, the normalized generic `Post.text` should therefore use that full value and fall back to `text` otherwise.
+The existing X adapter must preserve the best complete authored text the X payload exposes. X uses the selectable `note_tweet` field for long-form Note Tweet data, and current X documentation states that Posts longer than 280 characters keep their full text there rather than in the ordinary `text` field. When `note_tweet.text` is present, the normalized generic `Post.text` should therefore use that full value and fall back to `text` otherwise.
 
 This requirement does **not** force M0 to normalize every rich-text entity or article feature. It is a fidelity rule for the already-existing portable `Post.text` field. Successful raw evidence remains available for later richer interpretation.
 
-M0 now uses the remote `tweet.fields` parameter with `created_at,referenced_tweets,note_tweet`. It preserves supported reply/quote references, prefers full `note_tweet.text` when present, and explicitly sends `exclude=retweets` so reposts are not flattened into ordinary authored Posts before a portable repost relation exists.
+The existing X adapter uses the remote `tweet.fields` parameter with `created_at,referenced_tweets,note_tweet`. It preserves supported reply/quote references, prefers full `note_tweet.text` when present, and explicitly sends `exclude=retweets` so reposts are not flattened into ordinary authored Posts before a portable repost relation exists.
 
 X wire names remain X wire names. The remote API uses parameter/field names such as `tweet.fields`, `referenced_tweets`, and `note_tweet`; the fact that Sociarium's portable ontology calls the object a `Post` does not justify renaming remote protocol parameters.
