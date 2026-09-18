@@ -77,29 +77,6 @@ Research-before-code and the Surface Atlas are architectural policy, not project
 
 ## Core concepts
 
-### Surface dossier
-
-A dated, provenance-heavy research record for one social surface.
-
-A dossier distinguishes documented facts, direct observations, inference, and unknowns. It records per-data-class access, cost, friction, history, authentication, protocol behavior, and candidate acquisition sources.
-
-### Access tier
-
-A dated summary classification of the surface's access relationship:
-
-- Tier A — Sovereign-friendly;
-- Tier B — Workable;
-- Tier C — Adversarial;
-- Tier D — Inaccessible.
-
-The tier is not a social/political rating of the platform. Per-data-class matrices remain more precise than the overall tier.
-
-### Implementation admission
-
-A deliberate decision to spend engineering effort on a specific acquisition source after research establishes why it is worthwhile.
-
-No surface is automatically entitled to implementation.
-
 ### Surface
 
 A remote social system such as X, Reddit, Bluesky, Mastodon, or YouTube.
@@ -112,7 +89,7 @@ The software core stores a stable `SurfaceId`, but surface-specific protocol typ
 
 A dated, provenance-heavy research record describing how an authorized user can access and preserve their own data on one surface.
 
-A dossier records documented interfaces, observed first-party behavior, exports, identifiers, pagination/history, cost, friction, authentication boundaries, protocol drift, per-data-class access, and explicit unknowns.
+A dossier records documented interfaces, observed first-party behavior, exports, identifiers, pagination/history, cost, friction, authentication boundaries, protocol drift, per-data-class access, acquisition candidates, and explicit unknowns.
 
 Dossiers distinguish documented fact, direct observation, inference, and unknowns.
 
@@ -125,15 +102,21 @@ A dated summary of the access relationship:
 - Tier C — Adversarial;
 - Tier D — Inaccessible.
 
-The tier does not replace the detailed per-data-class access matrix.
+The tier is not a social/political rating of the platform and does not replace the detailed per-data-class access matrix.
 
 Tier C explicitly makes first-party private protocols a research target when sanctioned developer interfaces materially obstruct self-data access.
+
+### Implementation admission
+
+A deliberate decision to spend engineering effort on a specific acquisition source after research establishes why it is worthwhile.
+
+No surface is automatically entitled to implementation. `Do not implement` is a valid admission result.
 
 ### Acquisition source
 
 A mechanism by which Sociarium obtains evidence about a social surface.
 
-Examples include a live remote API and a first-party account archive. Acquisition source is provenance, not identity: importing an X archive does not create a new surface or a second remote profile.
+Examples include a live remote API, a first-party account archive, a public representation, or an authorized first-party private protocol. Acquisition source is provenance, not identity: importing an X archive does not create a new surface or a second remote profile.
 
 ### Adapter
 
