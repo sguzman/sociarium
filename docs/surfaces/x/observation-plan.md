@@ -1,6 +1,6 @@
 # X direct first-party observation plan
 
-Status: active under issue #12; profile initial load, Post detail, Bottom-cursor pagination through terminal history, short-interval query-ID reload comparison, History → Likes, History → Bookmarks, Followers, and Following are directly observed. Lists, notifications, bookmark folders, and repost representation remain outstanding.
+Status: active under issue #12; profile initial load, Post detail, Bottom-cursor pagination through terminal history, short-interval query-ID reload comparison, History → Likes, History → Bookmarks, Followers, Following, and Lists management are directly observed. Notifications, bookmark folders, list sub-operations, and repost representation remain outstanding.
 
 Purpose: convert public reverse-engineering claims into **dated Sociarium observations** of the first-party X web client used by the operator's own authorized account.
 
@@ -104,7 +104,7 @@ Direct observations are stored under:
 
 `docs/surfaces/x/observations/YYYY-MM-DD-<topic>.md`
 
-Direct observations now include [2026-09-18-profile-a.md](observations/2026-09-18-profile-a.md), [2026-09-18-profile-pagination.md](observations/2026-09-18-profile-pagination.md), [2026-09-18-likes.md](observations/2026-09-18-likes.md), [2026-09-18-bookmarks.md](observations/2026-09-18-bookmarks.md), [2026-09-18-followers.md](observations/2026-09-18-followers.md), and [2026-09-18-following.md](observations/2026-09-18-following.md).
+Direct observations now include [2026-09-18-profile-a.md](observations/2026-09-18-profile-a.md), [2026-09-18-profile-pagination.md](observations/2026-09-18-profile-pagination.md), [2026-09-18-likes.md](observations/2026-09-18-likes.md), [2026-09-18-bookmarks.md](observations/2026-09-18-bookmarks.md), [2026-09-18-followers.md](observations/2026-09-18-followers.md), [2026-09-18-following.md](observations/2026-09-18-following.md), and [2026-09-18-lists.md](observations/2026-09-18-lists.md).
 
 Each observation should clearly say:
 
