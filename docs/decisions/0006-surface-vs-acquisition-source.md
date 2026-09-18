@@ -15,7 +15,7 @@ X is a social surface. Evidence about an X profile may be acquired through sever
 - X's first-party downloadable account archive;
 - future explicitly documented capture/import mechanisms.
 
-The distinction became operationally necessary when X's official API moved to prepaid pay-per-use while Sociarium's M0 product requirement became zero paid API spend.
+The distinction became operationally necessary when X's official API moved to prepaid pay-per-use and the project discovered that a surface's sanctioned developer interface could not be treated as the whole access model.
 
 Treating an archive as a fake surface would corrupt the ontology. Forcing archive import through the network-oriented `SocialAdapter` trait would corrupt the acquisition boundary.
 
@@ -30,7 +30,7 @@ Model **surface** and **acquisition source** as independent axes.
 - Importers are not required to implement the network-oriented `SocialAdapter` trait.
 - Shared acquisition envelopes/evidence types should live in a source-neutral layer rather than inside a surface adapter.
 
-M0's zero-cost path uses a dedicated X archive importer. The official X API adapter remains available as an optional paid acquisition source.
+At the time of this decision, the immediate zero-cost implementation candidate was a dedicated X archive importer. ADR 0007 later superseded that implementation priority: archive import and the official API adapter are now preserved acquisition candidates/evidence while the Surface Atlas researches the full access terrain before further implementation.
 
 ## Consequences
 
@@ -38,7 +38,8 @@ M0's zero-cost path uses a dedicated X archive importer. The official X API adap
 - Provenance must distinguish the acquisition source even when normalized objects share the same surface/profile IDs.
 - Storage and query code must not assume every acquisition has pagination, OAuth, or a live remote request.
 - Future surfaces can expose multiple acquisition sources without changing the ontology.
-- The archive importer can remain offline and require no credentials.
+- Offline archive import can remain credential-free when/if research later admits it as an implementation target.
+- The same distinction supports Surface Atlas research into official APIs, exports, public representations, and authorized first-party private protocols without confusing any one of them with the surface itself.
 
 ## Non-decision
 
