@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
   "crates/sociarium-core",
+  "crates/sociarium-acquisition",
   "crates/sociarium-adapter",
   "crates/sociarium-adapter-x",
   "crates/sociarium-config",
