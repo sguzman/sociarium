@@ -10,6 +10,7 @@ members = [
   "crates/sociarium-store",
   "crates/sociarium-sync",
   "crates/sociarium-search",
+  "crates/sociarium-import-x-archive",
   "crates/sociarium-cli",
 ]
 
