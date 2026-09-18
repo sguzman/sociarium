@@ -97,6 +97,16 @@ Weaknesses:
 
 Status: **research target, not implementation-admitted.**
 
+## Current R2 status
+
+Direct first-party observation is now active under issue #12.
+
+See:
+
+- [Browser capture protocol](capture-protocol.md)
+- [Capture sanitization rules](capture-sanitization.md)
+- [Observation template](observations/TEMPLATE.md)
+
 ## Implementation recommendation
 
 **Do not resume X implementation yet.**
@@ -120,4 +130,7 @@ The existing official-API and archive-import code remains preserved substrate an
 - [Private first-party protocol](private-protocol.md)
 - [Terms and operational constraints](terms-and-constraints.md)
 - [Direct observation plan](observation-plan.md)
+- [Browser capture protocol](capture-protocol.md)
+- [Capture sanitization rules](capture-sanitization.md)
+- [Observation directory](observations/README.md)
 - [Source ledger](sources.md)
