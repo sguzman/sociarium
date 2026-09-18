@@ -212,7 +212,20 @@ impl CorpusStore {
         &self,
         profile: &TrackedProfile,
         batch: &AcquisitionBatch,
-    ) -> Result<PersistedBatch, StoreError> {
+        acquisition_source: &str,
+    ) -> Result<PersistedAcquisition, StoreError> {
+        self.persist_acquisition_files(profile, batch, acquisition_source)
+    }
+
+    fn persist_acquisition_files(
+        &self,
+        profile: &TrackedProfile,
+        batch: &AcquisitionBatch,
+        acquisition_source: &str,
+    ) -> Result<PersistedAcquisition, StoreError> {
+        if acquisition_source.trim().is_empty() {
+            return Err(StoreError::InvalidAcquisitionSource);
+        }
         let batch_meta = validate_batch(profile, batch)?;
         self.validate_profile_binding(profile, batch)?;
         let profile_dir = self.layout.acquisition_profile_dir(profile);
@@ -233,7 +246,13 @@ impl CorpusStore {
         ));
         fs::create_dir(&staging_dir)?;
 
-        let result = self.write_staging_batch(&staging_dir, profile, batch, batch_meta);
+        let result = self.write_staging_batch(
+            &staging_dir,
+            profile,
+            batch,
+            batch_meta,
+            acquisition_source,
+        );
         let manifest = match result {
             Ok(manifest) => manifest,
             Err(error) => {
@@ -244,26 +263,31 @@ impl CorpusStore {
 
         fs::rename(&staging_dir, &final_dir)?;
 
-        let state = ProfileSyncState::from_manifest(&manifest);
+        Ok(PersistedAcquisition {
+            acquisition_dir: final_dir,
+            manifest,
+        })
+    }
+
+    /// Persist a live-adapter acquisition and advance its recoverable sync state.
+    pub fn persist_sync_batch(
+        &self,
+        profile: &TrackedProfile,
+        batch: &AcquisitionBatch,
+    ) -> Result<PersistedBatch, StoreError> {
+        let persisted = self.persist_acquisition_files(profile, batch, "live_adapter")?;
+        let encoded_acquisition = encode_component(&persisted.manifest.acquisition_id);
+        let state = ProfileSyncState::from_manifest(&persisted.manifest);
         let state_dir = self.layout.checkpoint_profile_dir(profile);
         fs::create_dir_all(&state_dir)?;
         let state_path = state_dir.join(format!("{encoded_acquisition}.json"));
         write_new_json(&state_path, &state)?;
 
         Ok(PersistedBatch {
-            acquisition_dir: final_dir,
+            acquisition_dir: persisted.acquisition_dir,
             state_path,
-            manifest,
+            manifest: persisted.manifest,
         })
-    }
-
-    /// Compatibility wrapper for the live synchronization path.
-    pub fn persist_sync_batch(
-        &self,
-        profile: &TrackedProfile,
-        batch: &AcquisitionBatch,
-    ) -> Result<PersistedBatch, StoreError> {
-        self.persist_acquisition_batch(profile, batch)
     }
 
     pub fn profile_state(
@@ -293,6 +317,9 @@ impl CorpusStore {
             let manifest: AcquisitionManifest = read_json(&manifest_path)?;
             if manifest.profile_id != profile.id || manifest.surface != profile.surface {
                 return Err(StoreError::CorruptManifest(manifest_path));
+            }
+            if !is_sync_acquisition_source(&manifest.acquisition_source) {
+                continue;
             }
 
             let candidate = ProfileSyncState::from_manifest(&manifest);
@@ -376,6 +403,7 @@ impl CorpusStore {
         profile: &TrackedProfile,
         batch: &AcquisitionBatch,
         batch_meta: BatchMeta,
+        acquisition_source: &str,
     ) -> Result<AcquisitionManifest, StoreError> {
         let raw_dir = staging_dir.join("raw");
         let normalized_dir = staging_dir.join("normalized");
@@ -421,6 +449,7 @@ impl CorpusStore {
 
         let manifest = AcquisitionManifest {
             schema_version: STORE_SCHEMA_VERSION,
+            acquisition_source: acquisition_source.to_owned(),
             acquisition_id: batch_meta.acquisition_id,
             profile_id: profile.id.clone(),
             surface: profile.surface.clone(),
@@ -445,6 +474,8 @@ pub struct RawFileManifest {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct AcquisitionManifest {
     pub schema_version: u32,
+    #[serde(default = "legacy_acquisition_source")]
+    pub acquisition_source: String,
     pub acquisition_id: String,
     pub profile_id: ProfileId,
     pub surface: SurfaceId,
@@ -478,6 +509,12 @@ impl ProfileSyncState {
 }
 
 #[derive(Clone, Debug)]
+pub struct PersistedAcquisition {
+    pub acquisition_dir: PathBuf,
+    pub manifest: AcquisitionManifest,
+}
+
+#[derive(Clone, Debug)]
 pub struct PersistedBatch {
     pub acquisition_dir: PathBuf,
     pub state_path: PathBuf,
@@ -488,6 +525,14 @@ pub struct PersistedBatch {
 struct BatchMeta {
     acquisition_id: String,
     observed_at: DateTime<Utc>,
+}
+
+fn legacy_acquisition_source() -> String {
+    "legacy_sync".to_owned()
+}
+
+fn is_sync_acquisition_source(value: &str) -> bool {
+    matches!(value, "legacy_sync" | "live_adapter")
 }
 
 fn validate_corpus_marker(layout: &CorpusLayout) -> Result<CorpusRepositoryMetadata, StoreError> {
@@ -677,6 +722,8 @@ pub enum StoreError {
     EmptyBatch,
     #[error("acquisition batch acquisition id cannot be blank")]
     InvalidAcquisitionId,
+    #[error("acquisition source cannot be blank")]
+    InvalidAcquisitionSource,
     #[error("acquisition batch mixes records from different acquisitions")]
     MixedAcquisition,
     #[error("acquisition batch profile mismatch: expected {expected}, got {actual}")]
