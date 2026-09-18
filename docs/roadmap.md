@@ -72,7 +72,7 @@ Documentation alone is a valid completed result.
 
 ## R2 — Adversarial protocol archaeology
 
-**Next research phase. X is first because it is the operator's highest-priority surface.**
+**Active research phase. X is first because it is the operator's highest-priority surface. Execution is tracked in issue #12.**
 
 For Tier C surfaces, investigate the protocol actually shipped to the authorized user when sanctioned developer interfaces are materially inadequate.
 
