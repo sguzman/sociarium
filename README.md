@@ -6,15 +6,27 @@ Its long-term software goal is a Rust-native substrate that can preserve selecte
 
 > **Research the surface before implementing the adapter. The platform's preferred developer interface is not the ontology of the platform.**
 
-## Current phase: R0 — Surface Inventory
+## Current phase: R1 complete — R2 next
 
-New surface-specific implementation is intentionally frozen. During R0, research and documentation are the active work; existing code may receive preservation/security/build fixes but does not define the agenda.
+The initial Surface Atlas inventory and baseline dossiers are complete for:
 
-The immediate project task is to enumerate the social surfaces the human principal actually cares about, then investigate each one before choosing more implementation targets.
+- X / Twitter;
+- Reddit;
+- Bluesky;
+- Facebook;
+- YouTube;
+- Quora.
 
-Active execution log: [R0 — enumerate Surface Atlas inventory](https://github.com/sguzman/sociarium/issues/10).
+New surface-specific implementation remains intentionally frozen. Existing code may receive preservation/security/build fixes, but unfinished adapter/importer work does not define the agenda.
 
-**Stop condition:** until that inventory exists and dossier research begins, unfinished adapter/importer code is not a reason to resume implementation.
+The next research phase is **R2 — direct first-party observation / adversarial protocol archaeology**, starting with X because it is the human principal's highest-priority surface.
+
+Completed execution logs:
+
+- [R0 — enumerate Surface Atlas inventory](https://github.com/sguzman/sociarium/issues/10)
+- [R1 — build baseline Surface Atlas dossiers](https://github.com/sguzman/sociarium/issues/11)
+
+**Stop condition:** no new surface-specific implementation until dossier/observation research supports an explicit implementation-admission decision or the human principal deliberately overrides the freeze.
 
 For every surface, Sociarium asks:
 
@@ -180,7 +192,7 @@ See [docs/roadmap.md](docs/roadmap.md) for the research-first milestone sequence
 
 ## Development status
 
-The existing Rust workspace remains buildable project state. Code maintenance, security fixes, and preservation work may continue when needed, but new surface-specific feature implementation is not the active priority during R0.
+The existing Rust workspace remains buildable project state. Code maintenance, security fixes, and preservation work may continue when needed, but new surface-specific feature implementation is not the active priority during the Surface Atlas research phases.
 
 The declared MSRV remains Rust 1.85 and CI continues to protect the existing substrate.
 
