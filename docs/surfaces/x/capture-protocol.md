@@ -65,7 +65,8 @@ Use separate captures for:
 - Followers — current observed profile route `/<handle>/followers`; a small result set may terminate in the initial response;
 - Following — current observed profile route `/<handle>/following`; request `count` is not a guaranteed returned page size;
 - Lists — current observed profile route `/<handle>/lists`; the management surface may terminate in one response even when it includes recommendation and own-list modules;
-- Mentions/Notifications.
+- Notifications — current main route `/notifications`; observed `timeline_type=All`. Capture Mentions separately because the All capture does not establish its selector/operation behavior;
+- Mentions — capture the Mentions subview separately.
 
 For each:
 
