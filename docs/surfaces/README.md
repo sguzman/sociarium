@@ -10,11 +10,11 @@ During the Surface Atlas phases, progress is measured primarily in durable knowl
 
 ## Current phase
 
-**R1 — baseline Surface Atlas dossiers is complete.**
+**R2 — direct first-party observation / adversarial protocol archaeology is active.**
 
-All six surfaces in the initial inventory now have evidence-backed baseline dossiers. New surface-specific implementation remains frozen unless the human principal explicitly changes phase.
+R1 is complete for all six initial surfaces. New surface-specific implementation remains frozen unless the human principal explicitly changes phase.
 
-The next research phase is **R2 — direct first-party observation / adversarial protocol archaeology**, beginning with X because it is the operator's highest-priority surface.
+X is the active R2 target because it is the operator's highest-priority surface. Execution is tracked in issue #12.
 
 ## Inventory
 
@@ -22,7 +22,7 @@ The initial inventory is complete. Do not guess or pad this table merely to make
 
 | Surface | Operator priority | Research status | Overall tier | Last reviewed | Dossier |
 | --- | --- | --- | --- | --- | --- |
-| X / Twitter | **Highest** | baseline desk-research dossier complete; direct first-party observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](x/README.md) |
+| X / Twitter | **Highest** | R2 direct first-party observation active | provisional Tier C — Adversarial | 2026-09-18 | [dossier](x/README.md) |
 | Reddit | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial (Data API has Tier B-like paths) | 2026-09-18 | [dossier](reddit/README.md) |
 | Bluesky | unranked | baseline desk-research dossier complete; direct observation pending | **Tier A — Sovereign-friendly** | 2026-09-18 | [dossier](bluesky/README.md) |
 | Facebook | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](facebook/README.md) |
