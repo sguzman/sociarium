@@ -49,6 +49,9 @@ Never commit:
 - [2026-09-18 profile/timeline capture A](2026-09-18-profile-a.md) — first direct Edge/X observation; confirms current profile/detail operations, identity fields, reply/quote and `note_tweet` structures.
 - [2026-09-18 profile pagination to terminal history](2026-09-18-profile-pagination.md) — confirms Bottom-cursor pagination, 93 unique Posts in this young account, explicit `TimelineTerminateTimeline(direction=Bottom)`, and short-interval query-ID stability.
 - [2026-09-18 History → Likes](2026-09-18-likes.md) — confirms current `/i/history/likes` UI location, GraphQL `Likes`, Bottom-cursor pagination, and 80 unique liked Posts across four pages.
+- [2026-09-18 History → Bookmarks](2026-09-18-bookmarks.md) — confirms current `/i/history` Bookmarks view, GraphQL `Bookmarks`, Bottom-cursor pagination, 60 unique bookmarked Posts across three pages, and viewer-scoped request shape without `userId`.
+- [2026-09-18 Followers](2026-09-18-followers.md) — confirms GraphQL `Followers`, `TimelineUser` relationship payloads, and explicit Top/Bottom termination coexisting with cursor objects.
+- [2026-09-18 Following](2026-09-18-following.md) — confirms GraphQL `Following`, multi-page Bottom-cursor relationship pagination, 200 unique users across four pages, and the observed `count=20` versus 50 returned users-per-page mismatch.
 
 ## Naming
 
