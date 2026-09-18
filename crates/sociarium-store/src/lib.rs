@@ -554,7 +554,10 @@ fn ensure_corpus_gitignore(root: &Path) -> Result<(), StoreError> {
     Ok(())
 }
 
-fn validate_batch(profile: &TrackedProfile, batch: &AcquisitionBatch) -> Result<BatchMeta, StoreError> {
+fn validate_batch(
+    profile: &TrackedProfile,
+    batch: &AcquisitionBatch,
+) -> Result<BatchMeta, StoreError> {
     let first = batch.records.first().ok_or(StoreError::EmptyBatch)?;
     let first_observation = first.observation();
     if first_observation.acquisition_id.trim().is_empty() {
