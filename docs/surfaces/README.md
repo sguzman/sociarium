@@ -21,7 +21,7 @@ The human principal will supply the initial list. Do not guess or pad this table
 | Surface | Operator priority | Research status | Overall tier | Last reviewed | Dossier |
 | --- | --- | --- | --- | --- | --- |
 | X / Twitter | **Highest** | baseline desk-research dossier complete; direct first-party observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](x/README.md) |
-| Reddit | unranked | queued for baseline dossier | unknown | — | pending |
+| Reddit | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial (Data API has Tier B-like paths) | 2026-09-18 | [dossier](reddit/README.md) |
 | Bluesky | unranked | queued for baseline dossier | unknown | — | pending |
 | Facebook | unranked | queued for baseline dossier | unknown | — | pending |
 | YouTube | unranked | queued for baseline dossier | unknown | — | pending |
