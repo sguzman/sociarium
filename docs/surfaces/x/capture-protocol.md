@@ -110,6 +110,8 @@ Best option for analysis is to attach the raw HAR **in the private chat** rather
 
 Even then, treat it as sensitive account evidence.
 
+**Important observed behavior:** an Edge 153 sanitized HAR captured on 2026-09-18 still retained non-empty `x-csrf-token` values. A browser-provided "sanitized" export is therefore still private and must not be published or committed as-is.
+
 If you prefer to sanitize locally first, remove at minimum:
 
 - `Cookie` request headers;
