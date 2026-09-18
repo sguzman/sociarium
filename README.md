@@ -20,11 +20,9 @@ The first vertical slice is structurally implemented:
 8. rebuildable SQLite/FTS search projection;
 9. CLI authorization, sync, list, and search paths.
 
-A pre-live audit against the current X API and local repository boundaries found remaining repository-side M0 hardening. Issues #3–#7 are now resolved, including X wire/data fidelity, safe remote errors, bounded OAuth callback handling, explicit Git-safe corpus initialization, and durable stable remote-profile binding. The final repository-side M0 task is #2, the profile-aware local preflight.
+The pre-live audit is complete. Issues #2–#7 are resolved: X wire/data fidelity, safe remote errors, bounded OAuth callback handling, explicit Git-safe corpus initialization, durable stable remote-profile binding, and the no-network profile-aware readiness preflight are all implemented and CI-verified.
 
-**Issue #2 is now the sole pre-live implementation gate.**
-
-**Do not treat the live X smoke test as the next step until the remaining pre-live issues are resolved and CI is green.** After that, the final M0 validation gate is a real Windows authorization + synchronization run using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
+**Repository-side M0 implementation is complete. The final M0 validation gate is now the deliberate real Windows authorization + synchronization smoke test** using a registered X Developer App, an authorized account, and a dedicated operator-owned corpus repo/directory.
 
 Build resolution is reproducible: Sociarium commits `Cargo.lock`, uses Cargo resolver 3, selects an MSRV-compatible IDNA backend explicitly, and verifies the locked graph on stable Linux, native Windows, and Rust 1.85.
 
@@ -125,7 +123,7 @@ cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts list --profi
 cargo run -p sociarium-cli --locked -- --corpus <CORPUS_ROOT> posts search sociarium --profile x-main
 ```
 
-These live commands describe the M0 path, but the deliberate real-X smoke run remains blocked on the remaining pre-live issues above.
+These live commands describe the M0 path. Run the profile-aware offline preflight before authorizing X; after it reports `READY`, the next boundary is the deliberate live Windows/X smoke test.
 
 `SOCIARIUM_X_ACCESS_TOKEN` remains available only as an emergency process-level override; it is not the normal authentication path and is never persisted into the corpus.
 
@@ -156,6 +154,7 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
 cargo +1.85.0 check --workspace --all-targets --locked
 cargo run -p sociarium-cli --locked -- doctor
+cargo run -p sociarium-cli --locked -- --config <CORPUS_CONFIG> --corpus <CORPUS_ROOT> doctor --profile x-main
 ```
 
 Dependency updates should deliberately refresh `Cargo.lock` and then pass the full matrix. See ADR 0005 for the MSRV and dependency-resolution policy.
