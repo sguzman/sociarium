@@ -102,9 +102,17 @@ Directly observed in Microsoft Edge 153:
 
 The direct capture refines one public-research assumption: the observed profile timeline used `UserOriginalsTimeline`, not `UserTweets`. This does not prove `UserTweets` is absent elsewhere or in other builds.
 
-The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Likes/Bookmarks/Followers/Following/Lists/Notifications operation families remain unobserved.
+The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A repost wrapper and the Bookmarks/Followers/Following/Lists/Notifications operation families remain unobserved. Likes are now directly observed under the current History UI at `/i/history/likes`, backed by the GraphQL `Likes` operation with Bottom-cursor pagination.
 
 Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
+
+### History → Likes
+
+A later 2026-09-18 direct capture established that the current web UI exposes Likes under `/i/history/likes`.
+
+The liked-Post data itself still uses the GraphQL operation `Likes`, not a distinct History-specific data family. Four observed pages reused one dated query ID and paginated by passing the previous response's opaque Bottom cursor through `variables.cursor`. The capture contained 80 unique primary Posts, all marked `legacy.favorited = true`.
+
+See [observations/2026-09-18-likes.md](observations/2026-09-18-likes.md).
 
 ## Technical promise
 
