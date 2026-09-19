@@ -14,7 +14,7 @@
 
 Reddit presents a mixed access relationship rather than a simple open/closed result.
 
-The current Data API still provides an OAuth-authenticated programmatic interface, and Reddit documents a free-access rate limit of **100 queries per minute per OAuth client ID** for users eligible for free access. Access is not anonymous: the current policy requires registration/request approval, OAuth, and a descriptive User-Agent.
+The current Data API still provides an OAuth-authenticated programmatic interface. Reddit's June 2026 Responsible Builder Policy explicitly says API access requires a request plus **explicit approval**, and the current Data API Wiki documents **100 queries per minute per OAuth client ID** for users eligible for free access. Access is not anonymous: OAuth/login credentials are required for the normal rate-limited path.
 
 The built-in API documentation continues to expose broad account-oriented functionality including identity, authored posts/comments, saved items, upvoted/downvoted items, hidden items, subreddit subscriptions, messages, and other account data. Reddit's current Data API Wiki warns that some legacy technical documentation may be stale, so endpoint existence in the built-in docs is evidence but not a substitute for live validation.
 
@@ -55,6 +55,22 @@ This means **data-class/source-specific tiers matter**:
 - saved/voting/subscription/follow data under the future Devvit-only direction: currently trends Tier C;
 - historical preservation of deleted API-acquired content: Tier C conflict with Sociarium's goals;
 - official export: useful recovery/bootstrap but operationally poor for continuous acquisition.
+
+## R2 current-policy validation — 2026-09-18
+
+Issue #13 re-checked the baseline against current official Reddit sources.
+
+Confirmed:
+
+- Reddit's Responsible Builder Policy requires explicit approval before API access;
+- eligible free Data API access remains documented at 100 QPM per OAuth client ID;
+- the Data API Wiki warns that some legacy technical docs may be stale;
+- Reddit's August 2026 platform announcement says limited public API access will continue while new requests are gradually restricted and third-party apps are moved toward Devvit;
+- current Devvit documentation explicitly withholds subscribed communities, vote history, saved content, recent views, private profile information, and follows/friends from apps;
+- the current Data API guidance requires deletion of remotely deleted content and says retaining deleted content even after anonymization violates policy;
+- the official data-request flow remains current and may take up to 30 days.
+
+This strengthens, rather than weakens, the preservation conflict behind Reddit's provisional Tier C classification. Live endpoint validation and first-party observation remain necessary before the tier and implementation recommendation are finalized.
 
 ## Implementation recommendation
 
