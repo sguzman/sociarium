@@ -10,11 +10,11 @@ During the Surface Atlas phases, progress is measured primarily in durable knowl
 
 ## Current phase
 
-**R2 — direct first-party observation / adversarial protocol archaeology is active.**
+**R2 adversarial protocol archaeology remains active as a research program; the X baseline is complete. R3 comparative analysis is now active.**
 
-R1 is complete for all six initial surfaces. New surface-specific implementation remains frozen unless the human principal explicitly changes phase.
+R1 is complete for all six initial surfaces. X completed its first deep R2 sweep under issue #12. New surface-specific implementation remains frozen unless an I0 admission decision or explicit human-principal override authorizes it.
 
-X is the active R2 target because it is the operator's highest-priority surface. Execution is tracked in issue #12.
+The first R3 cross-surface comparison is maintained in [`../comparative-access-atlas.md`](../comparative-access-atlas.md).
 
 ## Inventory
 
@@ -22,7 +22,7 @@ The initial inventory is complete. Do not guess or pad this table merely to make
 
 | Surface | Operator priority | Research status | Overall tier | Last reviewed | Dossier |
 | --- | --- | --- | --- | --- | --- |
-| X / Twitter | **Highest** | R2 direct first-party observation active | provisional Tier C — Adversarial | 2026-09-18 | [dossier](x/README.md) |
+| X / Twitter | **Highest** | R2 baseline complete; implementation not admitted | **Tier C — Adversarial** | 2026-09-18 | [dossier](x/README.md) |
 | Reddit | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial (Data API has Tier B-like paths) | 2026-09-18 | [dossier](reddit/README.md) |
 | Bluesky | unranked | baseline desk-research dossier complete; direct observation pending | **Tier A — Sovereign-friendly** | 2026-09-18 | [dossier](bluesky/README.md) |
 | Facebook | unranked | baseline desk-research dossier complete; direct observation pending | provisional Tier C — Adversarial | 2026-09-18 | [dossier](facebook/README.md) |
@@ -33,7 +33,7 @@ The initial inventory is intentionally open-ended. New surfaces may be added lat
 
 **Operator priority is not an access tier.** Priority records how much the surface matters to the human principal; tier records how the surface treats self-data access. A high-priority surface may be adversarial, and a low-priority surface may be sovereign-friendly.
 
-X is currently the highest-priority research target. Its baseline dossier now establishes the documented API/export terrain, public technical evidence for the private web protocol, and current platform-policy constraints. Its Tier C classification remains provisional until direct first-party observation strengthens the undocumented-protocol evidence.
+X remains the highest-priority surface, but its first deep R2 baseline is complete. Direct observation confirmed a broad and coherent first-party protocol while the final access classification remained **Tier C — Adversarial**. Under current conditions, the private protocol is documented but not implementation-admitted.
 
 ## Queued surfaces
 
