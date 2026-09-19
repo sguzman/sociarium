@@ -49,6 +49,14 @@ Therefore the final R2 classification remains **Tier C — Adversarial**.
 
 The implementation recommendation is also now explicit: **do not admit an automated private-web-protocol adapter under current conditions.** Preserve the protocol map as research. Keep the official API as an optional paid backend and the official archive as a bootstrap/recovery source. Any future X implementation requires a separate I0 admission decision or an explicit human-principal override.
 
+## Current spending policy
+
+Current spending policy: **zero-spend**.
+
+The operator does not want to purchase X Premium or spend on API access right now. Paid X capabilities remain documented as possible future options, but they are not current research dependencies or acquisition candidates for implementation.
+
+Bookmark Folders are therefore deferred while they remain part of X's paid Premium feature set. X depth research proceeds with free/available surfaces instead.
+
 ## Acquisition candidates
 
 ### Official X API

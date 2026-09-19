@@ -43,6 +43,15 @@ Git history is an append-only project ledger, not a scratchpad.
 17. Documentation-only outcomes are valid. Do not manufacture implementation work merely to preserve coding momentum.
 18. Tier C — Adversarial means protocol archaeology is a legitimate research task when sanctioned interfaces materially obstruct self-data access. It does not authorize credential theft, impersonation, or bypassing meaningful authorization controls.
 
+## Zero-spend access rule
+
+- The current default budget for platform access is **$0**.
+- Prefer free-tier, zero-cost, self-hostable, or already-entitled mechanisms.
+- Do not ask the human principal to buy a subscription, API credits, elevated developer plan, or other paid entitlement just to satisfy a research milestone.
+- Paid capabilities may be documented, but they are deferred unless the human principal explicitly authorizes spending.
+- When a roadmap item is paid-only, mark it blocked/deferred and move to the next useful zero-cost item.
+- Do not silently treat "cheap" as "free."
+
 ## Research rules
 
 - The Surface Atlas is first-class project state, not disposable planning material.

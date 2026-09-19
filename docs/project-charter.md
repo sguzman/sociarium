@@ -90,6 +90,25 @@ A dossier should make it possible to answer:
 - which parts are inference?
 - what could make it stale?
 
+## Zero-spend operating policy
+
+The current operating budget for social-platform access is **$0 unless the human principal explicitly authorizes spending**.
+
+Sociarium should prefer genuinely free-tier, zero-cost, self-hostable, or already-entitled access paths. A feature, API, subscription, developer tier, or data class that requires new payment does not count as the current acquisition path merely because it would be technically convenient.
+
+Paid paths may still be documented as:
+
+- future options;
+- comparison baselines;
+- optional backends;
+- blocked research targets.
+
+Agents must not ask the human principal to purchase a platform subscription, API credits, elevated developer tier, or other paid entitlement merely to complete the research roadmap.
+
+If a paid capability blocks a research item, mark that item **deferred/blocked by cost** and continue with the highest-value zero-cost work.
+
+This policy is not an eternal ban on spending. The human principal may explicitly authorize a paid path later.
+
 ## The human principal is not an integration servant
 
 The project must not casually externalize platform friction onto the human principal.

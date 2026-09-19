@@ -139,3 +139,21 @@ ChatGPT:
 - made clear that completion of issue #12 closed only the baseline, not X research as a whole.
 
 No non-X surface work was initiated by this action.
+
+
+## 2026-09-19 UTC — zero-spend / free-tier policy made explicit
+
+Authorization: **explicit**
+
+The operator clarified that Sociarium should currently pursue **free-tier / zero-cost services** and that they do not want to pay for X Premium or other platform access right now.
+
+Project consequence:
+
+- default social-platform access budget is now $0 unless the operator explicitly authorizes spending;
+- paid capabilities may be documented but must not be treated as current dependencies;
+- agents must not ask the operator to buy subscriptions or API credits merely to complete research;
+- paid-only roadmap items are marked blocked/deferred rather than forcing spend;
+- X Bookmark Folders are deferred because the operator does not have Premium;
+- the active X depth roadmap now starts with Lists deep operations.
+
+This does not prohibit future spending if the operator explicitly changes the constraint.

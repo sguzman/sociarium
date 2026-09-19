@@ -16,9 +16,13 @@ This roadmap orders the remaining X work by:
 
 The order is intentional. Do not skip ahead merely because a later topic is more exotic.
 
-## Priority 1 — Bookmark folders
+## Deferred — Bookmark folders (paid feature)
 
-**Why first:** smallest extension of an already-mapped private self-data family, with strong expected value and low capture complexity.
+Status: **blocked by current zero-spend policy.** The operator does not have X Premium and does not want to pay for it now. X currently places Bookmark Folders in its paid Premium feature set.
+
+Do not ask the operator to purchase Premium for this research. Preserve this item for a future date if the operator independently gains access or explicitly authorizes spending.
+
+Original rationale: smallest extension of an already-mapped private self-data family, with strong expected value and low capture complexity.
 
 Establish:
 
@@ -36,7 +40,7 @@ Deliverable:
 - one sanitized bookmark-folder observation;
 - updates to X access matrix/private-protocol notes if the current shape differs from public technical evidence.
 
-## Priority 2 — Lists beyond management
+## Priority 1 — Lists beyond management
 
 The baseline only mapped `ListsManagementPageTimeline`.
 
@@ -53,7 +57,7 @@ Next map:
 
 **Why second:** Lists already exposed useful partial-success/error behavior and stable list IDs. Deeper mapping gives high schema leverage without touching high-sensitivity account data.
 
-## Priority 3 — Blocks and mutes
+## Priority 2 — Blocks and mutes
 
 Direct captures already showed `blocking`, `muting`, and relationship-perspective fields incidentally, but not the actual self-data collection operations.
 
@@ -69,7 +73,7 @@ Establish:
 
 **Why third:** these are first-class private relationship datasets and likely fit the existing user/relationship ontology cleanly.
 
-## Priority 4 — Search
+## Priority 3 — Search
 
 Directly observe current X Web search.
 
@@ -86,7 +90,7 @@ Map:
 
 **Why fourth:** search is broad and highly useful, but it is not necessary to understand account-owned state. It comes after the missing self-data collections.
 
-## Priority 5 — Likes and Bookmarks terminal-depth probes
+## Priority 4 — Likes and Bookmarks terminal-depth probes
 
 The baseline proved both are pageable but did not reach terminal history.
 
@@ -100,7 +104,7 @@ Establish, with bounded respectful probing:
 
 Do **not** infer a universal service-wide ceiling from one account.
 
-## Priority 6 — Deleted, edited, unavailable, and restricted objects
+## Priority 5 — Deleted, edited, unavailable, and restricted objects
 
 Build a representation taxonomy for objects that do not appear as ordinary Posts/users.
 
@@ -116,7 +120,7 @@ Capture opportunistically where possible:
 
 **Why here:** the normal happy-path schema should be stable before mapping exception objects.
 
-## Priority 7 — Public vs authenticated boundary matrix
+## Priority 6 — Public vs authenticated boundary matrix
 
 The baseline documents the name-level auth/session boundary. The next question is which **reads actually require which authority class**.
 
@@ -138,7 +142,7 @@ Goal: distinguish:
 - authenticated viewer reads;
 - strictly private self-data reads.
 
-## Priority 8 — Failure and error taxonomy
+## Priority 7 — Failure and error taxonomy
 
 Expand beyond the directly observed Lists partial-success GraphQL errors.
 
@@ -154,7 +158,7 @@ Research safely and without traffic flooding:
 
 **Do not intentionally hammer X to manufacture a 429.**
 
-## Priority 9 — Query-ID discovery, JavaScript bundles, features, and field toggles
+## Priority 8 — Query-ID discovery, JavaScript bundles, features, and field toggles
 
 Once the important operation families are mapped, study how the shipped client discovers/describes them.
 
@@ -169,7 +173,7 @@ Establish:
 
 This is protocol-mechanics research, not implementation admission.
 
-## Priority 10 — Official archive forensics
+## Priority 9 — Official archive forensics
 
 Inspect a current real X archive when available.
 
@@ -194,7 +198,7 @@ Compare archive authority against live first-party observations.
 
 Because archive preparation is asynchronous, the operator may request a one-time archive earlier in the roadmap. That does **not** make repeated archive requests the synchronization strategy. Analysis belongs here when the package is available.
 
-## Priority 11 — Live notification transport
+## Priority 10 — Live notification transport
 
 The read-side `NotificationsTimeline` is mapped. The actual real-time transport is not.
 
@@ -209,7 +213,7 @@ Establish:
 
 **Why late:** this is mechanically deeper and less important than completing ordinary read coverage.
 
-## Priority 12 — Direct Messages
+## Priority 11 — Direct Messages
 
 **Highest sensitivity; deliberately last.**
 
@@ -231,7 +235,7 @@ Raw DM payloads must remain private. Public documentation should contain schemas
 
 ## Ongoing overlay — protocol drift watch
 
-After Priority 9, protocol drift becomes a longitudinal maintenance activity rather than a blocking research task.
+After Priority 8, protocol drift becomes a longitudinal maintenance activity rather than a blocking research task.
 
 On later X web builds, compare:
 
@@ -249,18 +253,21 @@ Do not rewrite older observations to match newer builds. Add dated observations.
 
 The operator-facing sequence is:
 
-1. Bookmark folders
-2. Lists deep operations
-3. Blocks/mutes
-4. Search
-5. Likes/Bookmarks terminal depth
-6. Deleted/edited/unavailable semantics
-7. Public/authenticated boundary matrix
-8. Failure/error taxonomy
-9. Query-ID/bundle/feature mechanics
-10. Archive forensics
-11. Live notification transport
-12. Direct Messages
+1. Lists deep operations
+2. Blocks/mutes
+3. Search
+4. Likes/Bookmarks terminal depth
+5. Deleted/edited/unavailable semantics
+6. Public/authenticated boundary matrix
+7. Failure/error taxonomy
+8. Query-ID/bundle/feature mechanics
+9. Archive forensics
+10. Live notification transport
+11. Direct Messages
+
+Deferred paid-only work:
+
+- Bookmark folders — revisit only if the operator independently has Premium or explicitly authorizes spending.
 
 This order remains subordinate to new evidence. A discovery may promote a dependency, but ChatGPT should record and explain that change rather than silently reshuffling the roadmap.
 
