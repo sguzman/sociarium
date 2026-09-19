@@ -72,7 +72,9 @@ Documentation alone is a valid completed result.
 
 ## R2 — Adversarial protocol archaeology
 
-**Active research phase. X is first because it is the operator's highest-priority surface. Execution is tracked in issue #12.**
+**Active research program. The X baseline is complete as of 2026-09-18; issue #12 records the completed X sweep.**
+
+X was the first deep target because it is the operator's highest-priority surface. Its R2 result is documentation-complete, Tier C — Adversarial, with automated private-web-protocol implementation not admitted under current conditions. Further X archaeology is optional and should be question-driven rather than treated as a prerequisite for project progress.
 
 For Tier C surfaces, investigate the protocol actually shipped to the authorized user when sanctioned developer interfaces are materially inadequate.
 

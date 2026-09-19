@@ -51,17 +51,13 @@ That hypothesis requires direct Sociarium observation before being promoted beyo
 
 ## Reported authenticated request shape
 
-Public technical evidence describes authenticated web requests as using browser-session state, commonly including:
+Public technical evidence describes authenticated web requests as using browser-session state. The current boundary is documented by evidence class in [auth-session-boundary.md](auth-session-boundary.md).
 
-- a logged-in session cookie;
-- a CSRF cookie/value mirrored in an `x-csrf-token` header;
-- a web-client bearer/app identity;
-- X-specific client/auth headers;
-- increasingly, an `x-client-transaction-id` or equivalent client-generated request identifier.
+Direct Sociarium captures establish the X-specific request-header names `x-client-transaction-id`, `x-csrf-token`, `x-twitter-active-user`, `x-twitter-auth-type`, and `x-twitter-client-language`. Edge's sanitized HAR removes the ordinary `Cookie` and `Authorization` headers and request-cookie array, so those captures cannot directly expose cookie names.
+
+Multiple current public technical implementations independently identify the authenticated browser cookie names as `auth_token` and `ct0`, with `ct0` mirrored into `x-csrf-token`, and describe an `Authorization` web-client bearer/app-identity header. Sociarium records those names as secondary corroboration rather than mislabeling them as direct observation.
 
 Do **not** put live cookie values, auth tokens, CSRF values, or captured Authorization headers into this public repository.
-
-The transaction-ID and CSRF-related header names are now directly observed, but the complete authentication requirement remains unresolved because the sanitized HAR removed ordinary Cookie/Authorization material.
 
 ## What is directly unknown
 
@@ -105,7 +101,7 @@ The direct capture refines one public-research assumption: the observed profile 
 
 The first capture did not observe own-profile pagination. A second profile-focused capture later on 2026-09-18 directly observed repeated `UserOriginalsTimeline` Bottom-cursor pagination through `variables.cursor`, 93 unique Posts across five content-bearing pages for the young account, and a sixth zero-Post response carrying `TimelineTerminateTimeline(direction=Bottom)`. The same `UserOriginalsTimeline` query ID remained unchanged across the two separate captures roughly half an hour apart. A later Home timeline capture directly observed three repost wrappers using `legacy.retweeted_status_result.result`, including visibility-wrapped outer and inner Posts. The main Notifications and Mentions streams are both directly observed through viewer-scoped `NotificationsTimeline`, selected by `timeline_type=All` versus `timeline_type=Mentions`, with shared unread-state instructions and cursor-disappearance exhaustion semantics. Likes and Bookmarks are directly observed under the current History UI. Followers and Following are directly observed as `TimelineUser` relationship operations scoped by `userId`. Lists management is now directly observed as viewer-scoped `ListsManagementPageTimeline`, including module separation and partial-success GraphQL errors.
 
-Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, the exact complete authentication boundary is still not established. Importantly, the sanitized HAR did retain non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
+Because the browser's sanitized HAR omitted ordinary Cookie/Authorization headers, direct first-party evidence alone cannot name the session cookies. The boundary is nevertheless documented without values by combining direct header-name observation with current independent technical corroboration for `auth_token`, `ct0`, and the `Authorization` header. See [auth-session-boundary.md](auth-session-boundary.md). Importantly, the sanitized HAR retained non-empty `x-csrf-token` values, so raw/sanitized HAR files remain private evidence.
 
 ### Repost representation
 

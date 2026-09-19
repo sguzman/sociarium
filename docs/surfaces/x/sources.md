@@ -110,6 +110,18 @@ Useful for:
 - variables/features/field-toggle encoding;
 - distinction among read/write operation shapes.
 
+### x-agent-sdk
+
+https://github.com/alarok/x-agent-sdk
+
+Useful for:
+
+- independent current corroboration that logged-in browser sessions use cookie names `auth_token` and `ct0`;
+- `ct0` mirrored into the CSRF header;
+- current `x-client-transaction-id` requirement in a separate implementation.
+
+Cookie/session **values are never copied into Sociarium**. This source is secondary evidence because Edge sanitized HAR exports remove the ordinary Cookie header and request-cookie array.
+
 ### tweetkit-x constants
 
 https://github.com/nsozturk/tweetkit-x/blob/main/tweetkit_x/constants.py

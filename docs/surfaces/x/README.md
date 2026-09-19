@@ -6,7 +6,7 @@
 - Research started: 2026-09-18
 - Last reviewed: 2026-09-18
 - Operator priority: **highest**
-- Overall access tier: **provisional Tier C — Adversarial**
+- Overall access tier: **Tier C — Adversarial**
 - Confidence: high for official API/export facts; direct first-party evidence now covers profile, Post detail, profile pagination, reply/quote/repost relationships, Likes, Bookmarks, Followers, Following, Lists management, Notifications, and Mentions; remaining undocumented subviews are medium-confidence until observed
 
 ## Executive summary
@@ -25,7 +25,7 @@ X's current Terms of Service expressly prohibit scraping and automated access th
 
 ## Tier assessment
 
-**Provisional Tier C — Adversarial.**
+**Tier C — Adversarial.**
 
 Reasons:
 
@@ -36,6 +36,18 @@ Reasons:
 - recurring manual export should not be normalized as the operator's permanent job.
 
 This tier is about the **access relationship**, not the quality of X as a social network.
+
+## R2 tier/recommendation re-review — 2026-09-18
+
+The R2 first-party observation sweep does **not** change the overall access tier.
+
+Direct observation materially improved the technical picture: X Web exposes broad live self-data through first-party GraphQL and related internal request families, including profiles, authored Posts, Post detail, reply/quote/repost relationships, Likes, Bookmarks, Followers, Following, Lists, Notifications, and Mentions. The protocol is richer and more coherent than the official zero-spend developer surface.
+
+That technical richness does not make the access relationship cooperative. The official API remains metered for useful self-data reads, the comprehensive archive remains manual/asynchronous, and X's current Terms and Automation Rules materially constrain automated use of non-published web interfaces.
+
+Therefore the final R2 classification remains **Tier C — Adversarial**.
+
+The implementation recommendation is also now explicit: **do not admit an automated private-web-protocol adapter under current conditions.** Preserve the protocol map as research. Keep the official API as an optional paid backend and the official archive as a bootstrap/recovery source. Any future X implementation requires a separate I0 admission decision or an explicit human-principal override.
 
 ## Acquisition candidates
 
@@ -153,7 +165,9 @@ See [the All Notifications observation](observations/2026-09-18-notifications-al
 
 ## Current R2 status
 
-Direct first-party observation is now active under issue #12. The reply/quote/repost relation gate is complete; auth/session-boundary completion and the final X tier/recommendation re-review remain before the R2 baseline gate can close.
+**R2/X baseline complete as of 2026-09-18.** Issue #12 records the completed first-party observation sweep.
+
+The auth/session boundary is documented by evidence class in [auth-session-boundary.md](auth-session-boundary.md): X-specific request headers were directly observed in the operator's sanitized browser captures, while the sensitive cookie names stripped by Edge's sanitized HAR are corroborated by multiple current public technical implementations. No live credential values are stored in the repository.
 
 See:
 
@@ -163,18 +177,13 @@ See:
 
 ## Implementation recommendation
 
-**Do not resume X implementation yet.**
+**Do not admit an automated X private-web-protocol adapter under current conditions.**
 
-Next X work should be forensic:
+R2 established that the protocol is technically capable, but X's current contractual/operational constraints make that acquisition path unsuitable for normal Sociarium automation. Preserve the research and dated observations rather than converting them directly into replay code.
 
-1. preserve this documented/public-research baseline;
-2. directly observe the current first-party web client from the operator's own authenticated browser;
-3. map read-only operations relevant to self-data;
-4. record pagination, history depth, response identity semantics, and protocol drift;
-5. keep all cookies/tokens/session material outside the public repository;
-6. only then make a deliberate implementation-admission decision.
+The official X API remains a preserved optional paid backend. The official archive remains a useful bootstrap/recovery source. The existing official-API and archive-import code remains preserved substrate and implementation evidence.
 
-The existing official-API and archive-import code remains preserved substrate and implementation evidence.
+Any new X implementation now requires a separate I0 implementation-admission decision or an explicit human-principal override.
 
 ## Files
 
@@ -182,6 +191,7 @@ The existing official-API and archive-import code remains preserved substrate an
 - [Official API](official-api.md)
 - [Official archive/export](archive.md)
 - [Private first-party protocol](private-protocol.md)
+- [Auth/session boundary](auth-session-boundary.md)
 - [Terms and operational constraints](terms-and-constraints.md)
 - [Direct observation plan](observation-plan.md)
 - [Browser capture protocol](capture-protocol.md)
