@@ -122,3 +122,20 @@ Operational interpretation going forward:
 - The comparative atlas and Reddit research may exist in the repository without implying that Reddit is the next active task.
 - "Stop", "not next", or criticism of an already-committed change means stop further work unless the operator separately authorizes reversal.
 - Git history and this ledger preserve mistakes as well as successes.
+
+
+## 2026-09-19 UTC — X depth-research roadmap
+
+Authorization: **explicit**
+
+The operator asked ChatGPT to create a priority roadmap for the remaining X/Twitter research.
+
+ChatGPT:
+
+- created `docs/surfaces/x/priority-roadmap.md`;
+- ordered the remaining work from bookmark folders through Direct Messages;
+- prioritized low-sensitivity, high-leverage self-data coverage before protocol mechanics and high-sensitivity DM research;
+- linked the roadmap from the X dossier and observation plan;
+- made clear that completion of issue #12 closed only the baseline, not X research as a whole.
+
+No non-X surface work was initiated by this action.

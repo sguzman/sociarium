@@ -194,6 +194,7 @@ Any new X implementation now requires a separate I0 implementation-admission dec
 - [Auth/session boundary](auth-session-boundary.md)
 - [Terms and operational constraints](terms-and-constraints.md)
 - [Direct observation plan](observation-plan.md)
+- [Depth-research priority roadmap](priority-roadmap.md)
 - [Browser capture protocol](capture-protocol.md)
 - [Capture sanitization rules](capture-sanitization.md)
 - [Observation directory](observations/README.md)

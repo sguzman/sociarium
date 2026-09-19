@@ -1,6 +1,6 @@
 # X direct first-party observation plan
 
-Status: **R2/X baseline complete under issue #12 as of 2026-09-18.** Profile initial load, Post detail, Bottom-cursor pagination through terminal history, short-interval query-ID reload comparison, reply/quote/repost representation, History → Likes, History → Bookmarks, Followers, Following, Lists management, Notifications — All, and Notifications — Mentions are directly observed. The auth/session boundary is documented by evidence class in `auth-session-boundary.md`. Bookmark folders, list sub-operations, DMs, live push transport, and deeper history probes remain optional follow-up research rather than baseline blockers.
+Status: **R2/X baseline complete under issue #12 as of 2026-09-18.** Follow-up X depth research is ordered in [priority-roadmap.md](priority-roadmap.md). Profile initial load, Post detail, Bottom-cursor pagination through terminal history, short-interval query-ID reload comparison, reply/quote/repost representation, History → Likes, History → Bookmarks, Followers, Following, Lists management, Notifications — All, and Notifications — Mentions are directly observed. The auth/session boundary is documented by evidence class in `auth-session-boundary.md`. Bookmark folders, list sub-operations, DMs, live push transport, and deeper history probes remain optional follow-up research rather than baseline blockers.
 
 Purpose: convert public reverse-engineering claims into **dated Sociarium observations** of the first-party X web client used by the operator's own authorized account.
 
