@@ -10,6 +10,18 @@ The governing project intent is summarized in `docs/project-charter.md`. When im
 - **ChatGPT:** project owner/director/research lead/architect/integrator; defines research programs, milestones, architecture, acceptance criteria, and reviews evidence and integration quality.
 - **Codex/implementation agents:** implement bounded tasks only after admission by the current project phase. Do not invent coding work during a research freeze or silently redefine project goals.
 
+## Repository history safety
+
+Git history is an append-only project ledger, not a scratchpad.
+
+- **Never revert, reset, force-push, delete, or overwrite committed project work merely because it was premature, mistaken, unauthorized, superseded, or no longer the active priority.**
+- A human-principal correction such as "stop working on that" means stop future work. It does **not** authorize undoing work already committed.
+- Reverting committed work requires explicit human-principal authorization.
+- The only emergency exception is exposure of secrets, credentials, private/personal data, or another genuine publication leak where immediate containment is necessary. Any emergency corrective action must be recorded afterward.
+- Prefer additive corrections, superseding decisions, deactivation, or status changes over erasing prior work.
+- Do not infer permission to close, reopen, delete, or rewrite project issues/records merely from disapproval of the work they describe.
+- Maintain `docs/project-ledger.md` as an append-only record of significant ChatGPT-directed repository mutations, especially scope changes, mistaken actions, reversals, restorations, and implementation-admission decisions.
+
 ## Non-negotiable architecture
 
 1. Sociarium is not an X/Twitter client with future generalization bolted on. It is a generic social-data substrate whose first surface integration is X.
