@@ -105,6 +105,9 @@ The operator explicitly instructed ChatGPT to restore the work reverted by `05f6
 
 > committed work must not be reverted merely because it was mistaken, premature, or unauthorized; reversal requires explicit authorization, except urgent containment of secrets/private-personal data leaks.
 
+Restoration commit: `d1c38009dd75c98e1f3facc3af775ebc2eb39e6e`  
+Issue #13: reopened after the mistaken `not_planned` closure.
+
 Restoration action:
 
 - restore the repository tree containing the comparative atlas and Reddit validation from `10b31bf10990b67d16dae61ed935488da64b9ebc`;
