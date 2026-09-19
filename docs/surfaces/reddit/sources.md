@@ -4,21 +4,6 @@ Last reviewed: 2026-09-18.
 
 ## Official current sources
 
-### Responsible Builder Policy
-
-https://support.reddithelp.com/hc/en-us/articles/42728983564564-Responsible-Builder-Policy
-
-Updated June 2026.
-
-Used for:
-
-- explicit API approval requirement;
-- requirement to request access before accessing Reddit data through the API;
-- transparency/use-case requirements;
-- prohibition on masking or duplicating access requests;
-- access-limit compliance.
-
-
 ### Reddit Data API Wiki
 
 https://support.reddithelp.com/hc/en-us/articles/16160319875092-Reddit-Data-API-Wiki

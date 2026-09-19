@@ -101,9 +101,7 @@ R2 can conclude that a surface remains impractical or should stay documentation-
 
 ## R3 — Comparative access atlas
 
-**Active as of 2026-09-18.** The first six-surface comparison is [`comparative-access-atlas.md`](comparative-access-atlas.md).
-
-Maintain a cross-surface matrix covering at least:
+Once several dossiers exist, maintain a cross-surface matrix covering at least:
 
 - overall tier;
 - per-data-class accessibility;

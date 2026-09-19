@@ -13,9 +13,9 @@ These are not equivalent.
 
 ## Data API access
 
-Current Reddit Help says the Data API is available to **approved developers**. Reddit's Responsible Builder Policy, updated June 2026, makes the admission rule explicit: **approval is required**, and a developer must request access and receive explicit approval before accessing Reddit data through the API.
+Current Reddit Help says the Data API is available to **approved developers**.
 
-For non-commercial use, clients must operate under the approved use case and authenticate with OAuth/login credentials. Reddit's current support material also continues to require transparent client identification and prohibits masking the access purpose. Unauthenticated/non-login traffic may be blocked.
+For non-commercial use, developers must sign up/request access. Clients must authenticate with a registered OAuth token and use a unique descriptive User-Agent. Unauthenticated/non-login traffic may be blocked.
 
 For users eligible for free Data API access, the current documented rate limit is:
 
@@ -67,21 +67,6 @@ The Data API Wiki imposes unusually strong deletion obligations:
 The Data API Terms also prohibit retaining data beyond the approved use case and require deletion of data not required for it.
 
 This is a first-class architectural constraint for Sociarium, whose durable corpus is specifically meant to preserve prior observations.
-
-## Current official-access validation — 2026-09-18
-
-The R2 re-check confirms that the Data API has not simply disappeared. The current official model is a controlled-access interface:
-
-- explicit approval is required;
-- eligible free access is still documented;
-- the free limit remains 100 QPM per OAuth client ID;
-- OAuth/login credentials are required for the normal supported traffic path;
-- Reddit reserves discretion over app review and access;
-- commercial or otherwise unapproved uses can require a separate agreement.
-
-This is materially different from an open public API. It is nevertheless a real sanctioned acquisition path if Sociarium's actual use case is approved.
-
-The next unresolved question is **live endpoint availability for the approved personal use case**. The built-in API inventory remains broad, but Reddit itself warns that some legacy technical documentation may be stale. Endpoint listing is therefore not enough to mark the self-data coverage question closed.
 
 ## Reddit's announced platform direction
 

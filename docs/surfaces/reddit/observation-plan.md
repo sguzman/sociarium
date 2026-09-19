@@ -1,6 +1,6 @@
 # Reddit direct first-party observation plan
 
-Status: **official-access/policy validation active under issue #13; direct first-party capture not yet executed.** The current approval, free-rate-limit, Devvit private-data exclusions, API-transition direction, retention/deletion conflict, and export timing have been re-verified from current official sources.
+Status: planned, not yet executed.
 
 Goal: convert desk research into dated observations of Reddit's current first-party web client for the operator's own authenticated account.
 

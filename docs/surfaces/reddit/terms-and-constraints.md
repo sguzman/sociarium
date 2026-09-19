@@ -25,23 +25,11 @@ Current Data API Terms require:
 
 Reddit reserves the right to charge future Data API fees and can change/suspend/discontinue API access.
 
-## Responsible Builder approval boundary
-
-Reddit's June 2026 Responsible Builder Policy adds a clear admission boundary before technical use begins:
-
-- API access requires an access request;
-- explicit approval is required;
-- the developer must be transparent about how and why Reddit data is accessed;
-- duplicate/masked applications for the same use case are prohibited;
-- limits may not be circumvented.
-
-For Sociarium, this means "can authenticate" and "is approved to acquire" are separate facts.
-
 ## Deletion and retention conflict
 
 This is the most important Sociarium constraint.
 
-Current Data API guidance, re-checked on 2026-09-18, says:
+Current Data API guidance says:
 
 - delete locally held post/comment content if it is deleted from Reddit;
 - after account deletion, delete related user IDs and author-identifying information;
